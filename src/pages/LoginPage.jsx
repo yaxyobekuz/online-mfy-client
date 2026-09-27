@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { Button, InputGroup, Label, TextField, toast } from "@heroui/react";
+import { Button, InputGroup, Label, TextField } from "@heroui/react";
+import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import MahallaScene from "../components/MahallaScene.jsx";
 import api from "../config/api.js";
@@ -34,11 +35,7 @@ const LoginPage = () => {
         navigate("/", { state: { user } });
       })
       .catch((error) => {
-        toast.danger(
-          error?.message ||
-            "Access key noto'g'ri yoki foydalanuvchi topilmadi.",
-        );
-
+        toast.error("Access key noto'g'ri yoki foydalanuvchi topilmadi.");
         console.error("Login qilishda xatolik:", error);
       })
       .finally(() => setIsSubmitting(false));
