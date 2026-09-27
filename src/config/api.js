@@ -13,6 +13,9 @@ api.interceptors.request.use((config) => {
 });
 
 // Response
-api.interceptors.response.use((res) => res.data);
+api.interceptors.response.use(
+  (res) => res.data,
+  (err) => Promise.reject(err.response?.data || err),
+);
 
 export default api;
