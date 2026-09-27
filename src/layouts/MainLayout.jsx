@@ -1,8 +1,8 @@
 import api from "../config/api";
-import { useEffect, useState } from "react";
-import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import { Spinner } from "@heroui/react";
+import { useEffect, useState } from "react";
 import { useStore } from "../context/useStore.js";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 
 const MainLayout = () => {
   const navigate = useNavigate();
