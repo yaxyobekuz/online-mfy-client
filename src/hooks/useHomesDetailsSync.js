@@ -3,11 +3,22 @@ import { toast } from "sonner";
 import api from "../config/api";
 
 /**
- * Xonadonlar tafsilotini background'da (server tomonda) ommaviy
- * yuklashni boshlaydi va progressni polling orqali kuzatib boradi.
- * `startUrl` — sync boshlaydigan POST endpoint (ko'cha yoki hammasi).
+ * Background'da (server tomonda) ommaviy yuklashni boshlaydi va
+ * progressni polling orqali kuzatib boradi. Xonadon tafsiloti, oila
+ * a'zolari, GCP sinxronizatsiyasi kabi bir nechta joyda qayta
+ * ishlatiladi — har biri o'z `startUrl`/`statusUrl` juftini beradi.
  */
-export const useHomesDetailsSync = (startUrl, onFinished) => {
+export const useHomesDetailsSync = (
+  startUrl,
+  onFinished,
+  {
+    statusUrl = "/api/homes/details/sync/status",
+    doneMessage = "Yuklandi",
+    partialMessage = (failed) => `Yuklandi, lekin ${failed} ta yozuvda xatolik bo'ldi`,
+    startFailedMessage = "Yuklashni boshlashda xatolik yuz berdi.",
+    runningMessage = "Yuklashda xatolik yuz berdi.",
+  } = {},
+) => {
   const [progress, setProgress] = useState(null);
   const [showErrors, setShowErrors] = useState(false);
   const pollRef = useRef(null);
@@ -24,7 +35,7 @@ export const useHomesDetailsSync = (startUrl, onFinished) => {
   const pollStatus = () => {
     pollRef.current = setInterval(() => {
       api
-        .get("/api/homes/details/sync/status")
+        .get(statusUrl)
         .then((data) => {
           setProgress(data);
 
@@ -33,16 +44,14 @@ export const useHomesDetailsSync = (startUrl, onFinished) => {
 
             if (data.status === "done") {
               if (data.failed > 0) {
-                toast.warning(
-                  `Yuklandi, lekin ${data.failed} ta xonadonda xatolik bo'ldi`,
-                );
+                toast.warning(partialMessage(data.failed));
                 setShowErrors(true);
               } else {
-                toast.success("Xonadonlar tafsiloti yuklandi");
+                toast.success(doneMessage);
               }
               onFinished?.();
             } else {
-              toast.error("Tafsilotlarni yuklashda xatolik yuz berdi.");
+              toast.error(runningMessage);
             }
           }
         })
@@ -56,8 +65,11 @@ export const useHomesDetailsSync = (startUrl, onFinished) => {
     api
       .post(url)
       .then((data) => {
-        if (data?.message === "Yuklanadigan xonadon yo'q") {
-          toast.info("Yuklanadigan xonadon yo'q — hammasi allaqachon yuklangan");
+        if (
+          data?.message === "Yuklanadigan xonadon yo'q" ||
+          data?.message === "Yangilanadigan yozuv yo'q"
+        ) {
+          toast.info("Yangilanadigan yozuv yo'q — hammasi allaqachon yuklangan");
           return;
         }
 
@@ -68,7 +80,7 @@ export const useHomesDetailsSync = (startUrl, onFinished) => {
         toast.error(
           err?.message === "Yuklash allaqachon ketmoqda"
             ? "Yuklash allaqachon ketmoqda"
-            : "Tafsilotlarni yuklashni boshlashda xatolik yuz berdi.",
+            : startFailedMessage,
         );
       });
   };

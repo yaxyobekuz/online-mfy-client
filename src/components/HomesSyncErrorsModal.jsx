@@ -23,23 +23,32 @@ const HomesSyncErrorsModal = ({ isOpen, onOpenChange, errors = [] }) => {
                 </p>
               ) : (
                 <ul className="flex flex-col gap-3">
-                  {errors.map((error, index) => (
-                    <li
-                      key={`${error.homeId}-${index}`}
-                      className="rounded-lg border border-border bg-background p-3"
-                    >
-                      <div className="text-sm font-medium text-foreground">
-                        {error.fullName || `Xonadon №${error.homeNum ?? "—"}`}
-                      </div>
-                      <div className="text-xs text-foreground/60">
-                        Kadastr: {error.cadasterNumber ?? "—"} · ID:{" "}
-                        {error.homeId}
-                      </div>
-                      <div className="mt-1 text-sm text-danger">
-                        {error.reason}
-                      </div>
-                    </li>
-                  ))}
+                  {errors.map((error, index) => {
+                    const id = error.homeId ?? error.recordId ?? index;
+                    const subtitleParts = [
+                      error.cadasterNumber && `Kadastr: ${error.cadasterNumber}`,
+                      error.pinfl && `JSHSHIR: ${error.pinfl}`,
+                      id && `ID: ${id}`,
+                    ].filter(Boolean);
+
+                    return (
+                      <li
+                        key={`${id}-${index}`}
+                        className="rounded-lg border border-border bg-background p-3"
+                      >
+                        <div className="text-sm font-medium text-foreground">
+                          {error.fullName ||
+                            `Yozuv №${error.homeNum ?? error.rowNumber ?? "—"}`}
+                        </div>
+                        <div className="text-xs text-foreground/60">
+                          {subtitleParts.join(" · ")}
+                        </div>
+                        <div className="mt-1 text-sm text-danger">
+                          {error.reason}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </Modal.Body>

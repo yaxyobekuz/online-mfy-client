@@ -1,4 +1,4 @@
-import { Table } from "@heroui/react";
+import { Checkbox, Table } from "@heroui/react";
 
 const columns = [
   { id: "rowNumber", name: "№" },
@@ -11,6 +11,7 @@ const columns = [
   { id: "documentNumber", name: "Hujjat raqami" },
   { id: "phone", name: "Telefon raqami" },
   { id: "birthDate", name: "Tug'ilgan sana" },
+  { id: "gcpSyncedAt", name: "Yangilangan" },
 ];
 
 const RawRecordsTable = ({ records }) => (
@@ -37,6 +38,23 @@ const RawRecordsTable = ({ records }) => (
             <Table.Cell>{record.documentNumber ?? "—"}</Table.Cell>
             <Table.Cell>{record.phone ?? "—"}</Table.Cell>
             <Table.Cell>{record.birthDate ?? "—"}</Table.Cell>
+            <Table.Cell>
+              <Checkbox
+                isSelected={Boolean(record.gcpSyncedAt)}
+                isReadOnly
+                aria-label={
+                  record.gcpSyncedAt
+                    ? "So'nggi ma'lumotga yangilangan"
+                    : "Hali yangilanmagan"
+                }
+              >
+                <Checkbox.Content>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                </Checkbox.Content>
+              </Checkbox>
+            </Table.Cell>
           </Table.Row>
         )}
       </Table.Body>

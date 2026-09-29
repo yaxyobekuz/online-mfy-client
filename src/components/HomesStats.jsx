@@ -15,20 +15,27 @@ const StatCard = ({ label, value, valueClassName }) => (
   </Card>
 );
 
-const HomesStats = ({ stats }) => {
+const HomesStats = ({
+  stats,
+  totalLabel = "Jami xonadonlar",
+  positiveLabel = "Faol",
+  negativeLabel = "Nofaol",
+  positiveKey = "active",
+  negativeKey = "inactive",
+}) => {
   if (!stats) return null;
 
   return (
     <div className="mb-5 flex flex-wrap gap-3">
-      <StatCard label="Jami xonadonlar" value={stats.total} />
+      <StatCard label={totalLabel} value={stats.total} />
       <StatCard
-        label="Faol"
-        value={stats.active}
+        label={positiveLabel}
+        value={stats[positiveKey]}
         valueClassName="text-success"
       />
       <StatCard
-        label="Nofaol"
-        value={stats.inactive}
+        label={negativeLabel}
+        value={stats[negativeKey]}
         valueClassName="text-danger"
       />
     </div>

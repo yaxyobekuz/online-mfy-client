@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Spinner } from "@heroui/react";
-import { Phone, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, ListChecks, Phone, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 import api from "../config/api";
 import RawRecordsTable from "../components/RawRecordsTable.jsx";
 import HomesPagination from "../components/HomesPagination.jsx";
+import HomesStats from "../components/HomesStats.jsx";
+import HomesDetailsSyncProgress from "../components/HomesDetailsSyncProgress.jsx";
+import HomesSyncErrorsModal from "../components/HomesSyncErrorsModal.jsx";
+import { useHomesDetailsSync } from "../hooks/useHomesDetailsSync.js";
 
 const RawRecordsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,15 +22,32 @@ const RawRecordsPage = () => {
     totalPages: 1,
     total: 0,
   });
+  const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFixingPhones, setIsFixingPhones] = useState(false);
 
   const loadRecords = useCallback(
-    () => api.get("/api/raw-records", { params: { page } }).then(setRecordsPage),
+    () =>
+      Promise.all([
+        api.get("/api/raw-records", { params: { page } }),
+        api.get("/api/raw-records/stats"),
+      ]).then(([recordsData, statsData]) => {
+        setRecordsPage(recordsData);
+        setStats(statsData);
+      }),
     [page],
   );
+
+  const gcpSync = useHomesDetailsSync("/api/raw-records/gcp-sync", loadRecords, {
+    statusUrl: "/api/raw-records/gcp-sync/status",
+    doneMessage: "Ma'lumotlar so'nggi holatga yangilandi",
+    partialMessage: (failed) =>
+      `Yangilandi, lekin ${failed} ta yozuvda xatolik bo'ldi`,
+    startFailedMessage: "Yangilashni boshlashda xatolik yuz berdi.",
+    runningMessage: "Yangilashda xatolik yuz berdi.",
+  });
 
   useEffect(() => {
     loadRecords()
@@ -104,6 +125,37 @@ const RawRecordsPage = () => {
           <div className="flex flex-wrap items-center gap-2">
             {recordsPage.total > 0 && (
               <>
+                {gcpSync.progress?.failed > 0 && (
+                  <Button
+                    onPress={() => gcpSync.setShowErrors(true)}
+                    variant="ghost"
+                  >
+                    <AlertTriangle
+                      className="size-4 text-danger"
+                      aria-hidden="true"
+                    />
+                    {gcpSync.progress.failed} ta xatolik
+                  </Button>
+                )}
+
+                <Button
+                  onPress={() => gcpSync.start({ onlyMissing: true })}
+                  isDisabled={gcpSync.isRunning}
+                  variant="ghost"
+                >
+                  <ListChecks className="size-4" aria-hidden="true" />
+                  Yangilanmaganlarini yangilash
+                </Button>
+
+                <Button
+                  onPress={() => gcpSync.start()}
+                  isDisabled={gcpSync.isRunning}
+                  variant="ghost"
+                >
+                  <ListChecks className="size-4" aria-hidden="true" />
+                  So'nggi ma'lumotlarga yangilash
+                </Button>
+
                 <Button
                   onPress={handleFixPhones}
                   isDisabled={isFixingPhones}
@@ -144,6 +196,28 @@ const RawRecordsPage = () => {
             </Button>
           </div>
         </div>
+
+        <HomesStats
+          stats={stats}
+          totalLabel="Jami yozuvlar"
+          positiveLabel="Yangilangan"
+          negativeLabel="Yangilanmagan"
+          positiveKey="synced"
+          negativeKey="notSynced"
+        />
+
+        <HomesDetailsSyncProgress
+          progress={gcpSync.progress}
+          percent={gcpSync.percent}
+          runningLabel="Ma'lumotlar so'nggi holatga yangilanmoqda..."
+          doneLabel="Yangilandi"
+        />
+
+        <HomesSyncErrorsModal
+          isOpen={gcpSync.showErrors}
+          onOpenChange={gcpSync.setShowErrors}
+          errors={gcpSync.progress?.errors}
+        />
 
         {isLoading ? (
           <div className="flex justify-center py-16">
