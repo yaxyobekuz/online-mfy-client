@@ -3,6 +3,7 @@ import { Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { useStore } from "../context/useStore.js";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import Sidebar from "../components/Sidebar.jsx";
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -29,7 +30,14 @@ const MainLayout = () => {
 
   if (isLoading) return <LoadingContent />;
 
-  return <Outlet />;
+  return (
+    <div className="flex min-h-svh">
+      <Sidebar />
+      <main className="min-w-0 flex-1 bg-surface">
+        <Outlet />
+      </main>
+    </div>
+  );
 };
 
 const LoadingContent = () => {
