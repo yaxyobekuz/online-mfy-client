@@ -2,9 +2,13 @@
 @import "@heroui/styles";
 
 @theme {
-	--font-sans: "DM Sans", sans-serif;
+	--font-sans: "Inter", sans-serif;
 }
 
 [data-sonner-toaster] {
 	font-family: var(--font-sans) !important;
+}
+
+.container{
+	@apply max-w-7xl mx-auto px-4;
 }
