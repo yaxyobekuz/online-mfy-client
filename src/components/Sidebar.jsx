@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { Home, MapPin } from "lucide-react";
+import { FileSpreadsheet, Home, MapPin } from "lucide-react";
 
 const links = [
   { to: "/", label: "Ko'chalar", icon: MapPin },
   { to: "/homes", label: "Xonadonlar", icon: Home },
+  { to: "/raw-records", label: "Xom ma'lumot", icon: FileSpreadsheet },
 ];
 
 const Sidebar = () => {
