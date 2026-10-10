@@ -1,4 +1,4 @@
-import { Checkbox, Table } from "@heroui/react";
+import { Checkbox, Chip, Table } from "@heroui/react";
 
 const allColumns = [
   { id: "rowNumber", name: "№" },
@@ -12,7 +12,39 @@ const allColumns = [
   { id: "phone", name: "Telefon raqami" },
   { id: "birthDate", name: "Tug'ilgan sana" },
   { id: "gcpSyncedAt", name: "Yangilangan" },
+  { id: "familyAddStatus", name: "Oilaga kiritildi" },
 ];
+
+// Platformaga oila a'zosi sifatida kiritish holati. Har bir urinish
+// natijasi saqlanadi, shuning uchun qayta yuborilmaydi — bu yerda
+// aynan nima bo'lgani ko'rinadi.
+const FamilyAddStatus = ({ record }) => {
+  if (record.familyAddStatus === "success") {
+    return (
+      <Chip color="success" variant="soft" size="sm">
+        Kiritildi
+      </Chip>
+    );
+  }
+
+  if (record.familyAddStatus === "failed") {
+    return (
+      <Chip color="danger" variant="soft" size="sm" title={record.familyAddError}>
+        Xatolik
+      </Chip>
+    );
+  }
+
+  if (record.familyAddStatus === "skipped") {
+    return (
+      <Chip color="warning" variant="soft" size="sm" title={record.familyAddError}>
+        O'tkazildi
+      </Chip>
+    );
+  }
+
+  return <span className="text-foreground/40">—</span>;
+};
 
 /**
  * Xom yozuvlar jadvali. Bitta xonadon ichida ko'rsatilganda kadastr
@@ -99,6 +131,10 @@ const RawRecordsTable = ({ records, withCadasterColumn = true }) => (
                   </Checkbox.Control>
                 </Checkbox.Content>
               </Checkbox>
+            </Table.Cell>
+
+            <Table.Cell>
+              <FamilyAddStatus record={record} />
             </Table.Cell>
           </Table.Row>
         )}

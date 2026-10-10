@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { FileSpreadsheet, Home, HousePlus, MapPin } from "lucide-react";
+import { FileSpreadsheet, Home, HousePlus, MapPin, UserPlus } from "lucide-react";
 
 const links = [
   { to: "/", label: "Ko'chalar", icon: MapPin },
   { to: "/homes", label: "Xonadonlar", icon: Home },
   { to: "/raw-records", label: "Xom ma'lumot", icon: FileSpreadsheet },
   { to: "/raw-homes", label: "Xom xonadonlar", icon: HousePlus },
+  { to: "/family-add", label: "Oila a'zolarini kiritish", icon: UserPlus },
 ];
 
 const Sidebar = () => {

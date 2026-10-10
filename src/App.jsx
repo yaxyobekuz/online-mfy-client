@@ -8,6 +8,7 @@ import HomeDetailsPage from "./pages/HomeDetailsPage.jsx";
 import RawRecordsPage from "./pages/RawRecordsPage.jsx";
 import RawHomesPage from "./pages/RawHomesPage.jsx";
 import RawHomeDetailsPage from "./pages/RawHomeDetailsPage.jsx";
+import FamilyAddPage from "./pages/FamilyAddPage.jsx";
 import MainLayout from "./layouts/MainLayout.jsx";
 import { StoreProvider } from "./context/StoreContext.jsx";
 
@@ -32,6 +33,7 @@ const App = () => {
             path="/raw-homes/:cadasterNumber"
             element={<RawHomeDetailsPage />}
           />
+          <Route path="/family-add" element={<FamilyAddPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
