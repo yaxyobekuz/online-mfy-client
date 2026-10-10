@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button, Spinner } from "@heroui/react";
-import { AlertTriangle, ArrowLeft, ListChecks, RefreshCw } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ListChecks, RefreshCw, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../config/api";
@@ -42,6 +42,19 @@ const StreetHomesPage = () => {
   const detailsSync = useHomesDetailsSync(
     `/api/streets/${streetId}/homes/details/sync`,
     loadHomes,
+  );
+
+  const familySync = useHomesDetailsSync(
+    `/api/streets/${streetId}/homes/family/sync`,
+    loadHomes,
+    {
+      statusUrl: "/api/family/sync/status",
+      doneMessage: "Oila a'zolari yuklandi",
+      partialMessage: (failed) =>
+        `Oila a'zolari yuklandi, lekin ${failed} ta xonadonda xatolik bo'ldi`,
+      startFailedMessage: "Oila a'zolarini yuklashni boshlashda xatolik.",
+      runningMessage: "Oila a'zolarini yuklashda xatolik yuz berdi.",
+    },
   );
 
   useEffect(() => {
@@ -104,6 +117,19 @@ const StreetHomesPage = () => {
               </Button>
             )}
 
+            {familySync.progress?.failed > 0 && (
+              <Button
+                onPress={() => familySync.setShowErrors(true)}
+                variant="ghost"
+              >
+                <AlertTriangle
+                  className="size-4 text-danger"
+                  aria-hidden="true"
+                />
+                Oila: {familySync.progress.failed} ta xatolik
+              </Button>
+            )}
+
             <Button
               onPress={() => detailsSync.start({ onlyMissing: true })}
               isDisabled={detailsSync.isRunning}
@@ -120,6 +146,15 @@ const StreetHomesPage = () => {
             >
               <ListChecks className="size-4" aria-hidden="true" />
               Barcha tafsilotlarni yuklash
+            </Button>
+
+            <Button
+              onPress={() => familySync.start({ onlyMissing: true })}
+              isDisabled={familySync.isRunning}
+              variant="ghost"
+            >
+              <Users className="size-4" aria-hidden="true" />
+              Oila a'zolarini yuklash
             </Button>
 
             <Button
@@ -143,10 +178,22 @@ const StreetHomesPage = () => {
           percent={detailsSync.percent}
         />
 
+        <HomesDetailsSyncProgress
+          progress={familySync.progress}
+          percent={familySync.percent}
+          runningLabel="Oila a'zolari yuklanmoqda..."
+        />
+
         <HomesSyncErrorsModal
           isOpen={detailsSync.showErrors}
           onOpenChange={detailsSync.setShowErrors}
           errors={detailsSync.progress?.errors}
+        />
+
+        <HomesSyncErrorsModal
+          isOpen={familySync.showErrors}
+          onOpenChange={familySync.setShowErrors}
+          errors={familySync.progress?.errors}
         />
 
         {isLoading ? (
