@@ -6,6 +6,8 @@ import StreetHomesPage from "./pages/StreetHomesPage.jsx";
 import HomesPage from "./pages/HomesPage.jsx";
 import HomeDetailsPage from "./pages/HomeDetailsPage.jsx";
 import RawRecordsPage from "./pages/RawRecordsPage.jsx";
+import RawHomesPage from "./pages/RawHomesPage.jsx";
+import RawHomeDetailsPage from "./pages/RawHomeDetailsPage.jsx";
 import MainLayout from "./layouts/MainLayout.jsx";
 import { StoreProvider } from "./context/StoreContext.jsx";
 
@@ -25,6 +27,11 @@ const App = () => {
           />
           <Route path="/homes" element={<HomesPage />} />
           <Route path="/raw-records" element={<RawRecordsPage />} />
+          <Route path="/raw-homes" element={<RawHomesPage />} />
+          <Route
+            path="/raw-homes/:cadasterNumber"
+            element={<RawHomeDetailsPage />}
+          />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
