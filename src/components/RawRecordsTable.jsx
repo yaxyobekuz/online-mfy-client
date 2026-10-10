@@ -1,6 +1,6 @@
 import { Checkbox, Table } from "@heroui/react";
 
-const columns = [
+const allColumns = [
   { id: "rowNumber", name: "№" },
   { id: "fullName", name: "F.I.Sh." },
   { id: "cadasterNumber", name: "Kadastr raqami" },
@@ -14,10 +14,21 @@ const columns = [
   { id: "gcpSyncedAt", name: "Yangilangan" },
 ];
 
-const RawRecordsTable = ({ records }) => (
+/**
+ * Xom yozuvlar jadvali. Bitta xonadon ichida ko'rsatilganda kadastr
+ * ustuni ortiqcha — hamma qatorda bir xil qiymat turadi, shuning
+ * uchun `withCadasterColumn={false}` bilan yashiriladi.
+ */
+const RawRecordsTable = ({ records, withCadasterColumn = true }) => (
   <Table aria-label="Xom ma'lumot jadvali">
     <Table.Content>
-      <Table.Header columns={columns}>
+      <Table.Header
+        columns={
+          withCadasterColumn
+            ? allColumns
+            : allColumns.filter((c) => c.id !== "cadasterNumber")
+        }
+      >
         {(column) => (
           <Table.Column isRowHeader={column.id === "rowNumber"}>
             {column.name}
@@ -30,8 +41,30 @@ const RawRecordsTable = ({ records }) => (
           <Table.Row id={record._id}>
             <Table.Cell>{record.rowNumber ?? "—"}</Table.Cell>
             <Table.Cell>{record.fullName ?? "—"}</Table.Cell>
-            <Table.Cell>{record.cadasterNumber ?? "—"}</Table.Cell>
-            <Table.Cell>{record.relationship ?? "—"}</Table.Cell>
+            {withCadasterColumn && (
+              <Table.Cell>
+                {record.cadasterNumber ?? "—"}
+                {record.alternateCadasters?.length > 0 && (
+                  <span
+                    className="ml-1 text-xs text-foreground/50"
+                    title={`Boshqa ehtimoliy kadastrlar: ${record.alternateCadasters.join(", ")}`}
+                  >
+                    +{record.alternateCadasters.length}
+                  </span>
+                )}
+              </Table.Cell>
+            )}
+            <Table.Cell>
+              {record.relationship ?? "—"}
+              {!withCadasterColumn && record.alternateCadasters?.length > 0 && (
+                <span
+                  className="ml-1 text-xs text-warning"
+                  title={`Kadastri aniq emas. Boshqa ehtimoliy kadastrlar: ${record.alternateCadasters.join(", ")}`}
+                >
+                  (shubhali)
+                </span>
+              )}
+            </Table.Cell>
             <Table.Cell>{record.pinfl ?? "—"}</Table.Cell>
             <Table.Cell>{record.documentType ?? "—"}</Table.Cell>
             <Table.Cell>{record.documentSeries ?? "—"}</Table.Cell>
@@ -40,10 +73,12 @@ const RawRecordsTable = ({ records }) => (
             <Table.Cell>{record.birthDate ?? "—"}</Table.Cell>
             <Table.Cell>
               <Checkbox
-                isSelected={Boolean(record.gcpSyncedAt)}
+                isSelected={Boolean(
+                  record.gcpSyncedAt || record.birthCertSyncedAt,
+                )}
                 isReadOnly
                 aria-label={
-                  record.gcpSyncedAt
+                  record.gcpSyncedAt || record.birthCertSyncedAt
                     ? "So'nggi ma'lumotga yangilangan"
                     : "Hali yangilanmagan"
                 }

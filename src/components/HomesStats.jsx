@@ -22,6 +22,7 @@ const HomesStats = ({
   negativeLabel = "Nofaol",
   positiveKey = "active",
   negativeKey = "inactive",
+  negativeClassName = "text-danger",
 }) => {
   if (!stats) return null;
 
@@ -36,7 +37,7 @@ const HomesStats = ({
       <StatCard
         label={negativeLabel}
         value={stats[negativeKey]}
-        valueClassName="text-danger"
+        valueClassName={negativeClassName}
       />
     </div>
   );
