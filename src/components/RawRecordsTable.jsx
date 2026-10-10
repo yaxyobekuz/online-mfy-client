@@ -66,7 +66,17 @@ const RawRecordsTable = ({ records, withCadasterColumn = true }) => (
               )}
             </Table.Cell>
             <Table.Cell>{record.pinfl ?? "—"}</Table.Cell>
-            <Table.Cell>{record.documentType ?? "—"}</Table.Cell>
+            <Table.Cell>
+              {record.documentType ?? "—"}
+              {record.documentExpired && (
+                <span
+                  className="ml-1 text-xs text-warning"
+                  title="Hujjat muddati o'tgan — davlat bazasida yaroqsiz deb belgilangan. Yangilanmaydi."
+                >
+                  (eskirgan)
+                </span>
+              )}
+            </Table.Cell>
             <Table.Cell>{record.documentSeries ?? "—"}</Table.Cell>
             <Table.Cell>{record.documentNumber ?? "—"}</Table.Cell>
             <Table.Cell>{record.phone ?? "—"}</Table.Cell>

@@ -23,6 +23,10 @@ const HomesStats = ({
   positiveKey = "active",
   negativeKey = "inactive",
   negativeClassName = "text-danger",
+  // Ixtiyoriy to'rtinchi kartochka (masalan "Hujjati eskirgan").
+  // Qiymat nol bo'lsa ko'rsatilmaydi.
+  extraLabel,
+  extraKey,
 }) => {
   if (!stats) return null;
 
@@ -39,6 +43,13 @@ const HomesStats = ({
         value={stats[negativeKey]}
         valueClassName={negativeClassName}
       />
+      {extraKey && stats[extraKey] > 0 && (
+        <StatCard
+          label={extraLabel}
+          value={stats[extraKey]}
+          valueClassName="text-warning"
+        />
+      )}
     </div>
   );
 };

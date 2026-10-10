@@ -204,6 +204,8 @@ const RawRecordsPage = () => {
           negativeLabel="Yangilanmagan"
           positiveKey="synced"
           negativeKey="notSynced"
+          extraLabel="Hujjati eskirgan"
+          extraKey="expired"
         />
 
         <HomesDetailsSyncProgress
