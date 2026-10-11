@@ -189,6 +189,13 @@ const FamilyAddPage = () => {
                 value={stats.notSynced}
                 className="text-foreground/60"
               />
+              {stats.expired > 0 && (
+                <StatCard
+                  label="Hujjati eskirgan"
+                  value={stats.expired}
+                  className="text-foreground/60"
+                />
+              )}
             </div>
 
             {progress && (
