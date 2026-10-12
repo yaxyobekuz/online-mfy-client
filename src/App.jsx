@@ -9,6 +9,9 @@ import RawRecordsPage from "./pages/RawRecordsPage.jsx";
 import RawHomesPage from "./pages/RawHomesPage.jsx";
 import RawHomeDetailsPage from "./pages/RawHomeDetailsPage.jsx";
 import FamilyAddPage from "./pages/FamilyAddPage.jsx";
+import CitizensPage from "./pages/CitizensPage.jsx";
+import MahallasPage from "./pages/MahallasPage.jsx";
+import MahallaDetailsPage from "./pages/MahallaDetailsPage.jsx";
 import MainLayout from "./layouts/MainLayout.jsx";
 import { StoreProvider } from "./context/StoreContext.jsx";
 
@@ -34,6 +37,9 @@ const App = () => {
             element={<RawHomeDetailsPage />}
           />
           <Route path="/family-add" element={<FamilyAddPage />} />
+          <Route path="/citizens" element={<CitizensPage />} />
+          <Route path="/mahallas" element={<MahallasPage />} />
+          <Route path="/mahallas/:key" element={<MahallaDetailsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

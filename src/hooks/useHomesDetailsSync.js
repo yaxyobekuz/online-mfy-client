@@ -59,10 +59,24 @@ export const useHomesDetailsSync = (
     }, 1000);
   };
 
-  const start = ({ onlyMissing = false } = {}) => {
-    const url = onlyMissing ? `${startUrl}?onlyMissing=true` : startUrl;
+  // `params` orqali qo'shimcha cheklov berish mumkin (masalan
+  // { mahalla: "KOL" } — faqat bitta mahallani yangilash).
+  const start = ({ onlyMissing = false, params } = {}) => {
+    const query = new URLSearchParams();
+    if (onlyMissing) query.set("onlyMissing", "true");
+    for (const [name, value] of Object.entries(params ?? {})) {
+      if (value !== undefined && value !== null && value !== "") {
+        query.set(name, String(value));
+      }
+    }
 
-    api
+    const search = query.toString();
+    const url = search ? `${startUrl}?${search}` : startUrl;
+
+    // Promise qaytaramiz: chaqiruvchi jarayon haqiqatan boshlanganini
+    // bilib, o'z holatini (masalan "qaysi mahalla yangilanmoqda")
+    // to'g'ri tozalay olsin.
+    return api
       .post(url)
       .then((data) => {
         if (
@@ -70,18 +84,23 @@ export const useHomesDetailsSync = (
           data?.message === "Yangilanadigan yozuv yo'q"
         ) {
           toast.info("Yangilanadigan yozuv yo'q — hammasi allaqachon yuklangan");
-          return;
+          return false;
         }
 
         setProgress({ status: "running", total: 0, done: 0, failed: 0 });
         pollStatus();
+        return true;
       })
       .catch((err) => {
-        toast.error(
-          err?.message === "Yuklash allaqachon ketmoqda"
-            ? "Yuklash allaqachon ketmoqda"
-            : startFailedMessage,
-        );
+        // Serverdan tushunarli xabar kelgan bo'lsa, o'shani
+        // ko'rsatamiz ("Mahalla topilmadi" kabi).
+        const known = [
+          "Yuklash allaqachon ketmoqda",
+          "Mahalla topilmadi",
+        ].includes(err?.message);
+
+        toast.error(known ? err.message : startFailedMessage);
+        return false;
       });
   };
 

@@ -1,5 +1,13 @@
 import { NavLink } from "react-router-dom";
-import { FileSpreadsheet, Home, HousePlus, MapPin, UserPlus } from "lucide-react";
+import {
+  FileSpreadsheet,
+  Home,
+  HousePlus,
+  MapPin,
+  MapPinned,
+  UserPlus,
+  Users,
+} from "lucide-react";
 
 const links = [
   { to: "/", label: "Ko'chalar", icon: MapPin },
@@ -7,6 +15,8 @@ const links = [
   { to: "/raw-records", label: "Xom ma'lumot", icon: FileSpreadsheet },
   { to: "/raw-homes", label: "Xom xonadonlar", icon: HousePlus },
   { to: "/family-add", label: "Oila a'zolarini kiritish", icon: UserPlus },
+  { to: "/citizens", label: "Umumiy fuqarolar bazasi", icon: Users },
+  { to: "/mahallas", label: "Mahallalar ro'yxati", icon: MapPinned },
 ];
 
 const Sidebar = () => {
