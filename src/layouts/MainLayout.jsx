@@ -10,13 +10,21 @@ const MainLayout = () => {
   const { set, remove } = useStore();
 
   const hasToken = localStorage.getItem("accessToken");
-  if (!hasToken) return <Navigate to="/login" replace />;
 
   // State variables for managing form input and submission status
+  //
+  // Hook'lar erta `return` dan OLDIN turadi: React ularning har
+  // doim bir xil tartibda chaqirilishini talab qiladi. Token
+  // yo'qolganda (masalan chiqishda) tartib buzilib, ilova
+  // qulashi mumkin edi.
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if the user is already logged in and redirect to the home page if they are
   useEffect(() => {
+    // Token bo'lmasa so'rov yubormaymiz — pastda login'ga
+    // yo'naltiriladi.
+    if (!hasToken) return;
+
     api
       .get("/api/user")
       .then((user) => set("user", user))
@@ -26,8 +34,10 @@ const MainLayout = () => {
         localStorage.removeItem("accessToken");
       })
       .finally(() => setIsLoading(false));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasToken]);
 
+  if (!hasToken) return <Navigate to="/login" replace />;
   if (isLoading) return <LoadingContent />;
 
   return (

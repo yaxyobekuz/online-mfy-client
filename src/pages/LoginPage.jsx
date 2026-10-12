@@ -9,14 +9,18 @@ import api from "../config/api.js";
 const LoginPage = () => {
   const navigate = useNavigate();
 
-  // Check if the user is already logged in and redirect to the home page if they are
-  const hasToken = localStorage.getItem("accessToken");
-  if (hasToken) return <Navigate to="/" />;
-
   // State variables for managing form input and submission status
+  //
+  // Hook'lar har doim BIR XIL tartibda chaqirilishi shart — shuning
+  // uchun ular erta `return` dan oldin turadi. Aks holda token
+  // holati o'zgarganda React hook'lar tartibini yo'qotadi.
   const [accessToken, setAccessToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAccessTokenVisible, setIsAccessTokenVisible] = useState(true);
+
+  // Check if the user is already logged in and redirect to the home page if they are
+  const hasToken = localStorage.getItem("accessToken");
+  if (hasToken) return <Navigate to="/" />;
 
   // Handle form submission
   const handleSubmit = async (event) => {

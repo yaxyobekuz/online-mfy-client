@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import api from "../config/api";
 import RegistrationMahallasTable from "../components/RegistrationMahallasTable.jsx";
+import MahallaTokensPanel from "../components/MahallaTokensPanel.jsx";
 
 /**
  * MFY bo'yicha oila a'zolarini ro'yxatdan o'tkazish — boshlash
@@ -17,6 +18,7 @@ const RegistrationPage = () => {
   const [mahallas, setMahallas] = useState([]);
   const [available, setAvailable] = useState(null);
   const [runs, setRuns] = useState([]);
+  const [tokens, setTokens] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [startingKey, setStartingKey] = useState(null);
@@ -26,10 +28,12 @@ const RegistrationPage = () => {
       Promise.all([
         api.get("/api/registration/mahallas"),
         api.get("/api/registration/runs"),
-      ]).then(([mahallaData, runData]) => {
+        api.get("/api/mahalla-tokens"),
+      ]).then(([mahallaData, runData, tokenData]) => {
         setMahallas(mahallaData.items ?? []);
         setAvailable(mahallaData.available ?? 0);
         setRuns(runData.items ?? []);
+        setTokens(tokenData.items ?? []);
       }),
     [],
   );
@@ -40,16 +44,24 @@ const RegistrationPage = () => {
       .finally(() => setIsLoading(false));
   }, [load]);
 
-  // Ishlab turgan yurish bo'lsa — ikkinchisini boshlashga ruxsat
-  // bermaymiz: tashqi API limiti umumiy, ikki jarayon parallel ketsa
-  // ikkalasi ham sekinlashadi.
-  const activeRun = runs.find((run) => run.isActive);
+  // Faol yurishlar. Turli MFY lar PARALLEL ketaveradi — har
+  // birining o'z tokeni va o'z rate-limit oqimi bor. Shuning uchun
+  // bitta emas, hammasi ko'rsatiladi.
+  const activeRuns = runs.filter((run) => run.isActive);
 
   const handleStart = (mahalla) => {
     setStartingKey(mahalla.key);
 
+    // Mahalla qaysi token hududiga tegishli bo'lsa, o'sha token
+    // bilan boshlanadi. Aniqlanmasa, joriy seans tokeni ishlatiladi
+    // (server o'zi shunday qiladi).
+    const owner = tokens.find((t) => t.uid === mahalla.ownerUid);
+
     api
-      .post("/api/registration/runs", { mahalla: mahalla.key })
+      .post("/api/registration/runs", {
+        mahalla: mahalla.key,
+        ...(owner ? { tokenId: owner.id } : {}),
+      })
       .then((data) => {
         if (data.resumed) {
           toast.info("Tugallanmagan yurish davom ettirildi");
@@ -134,26 +146,37 @@ const RegistrationPage = () => {
           </p>
         )}
 
-        {activeRun && (
-          <button
-            type="button"
-            onClick={() => navigate(`/registration/runs/${activeRun.id}`)}
-            className="mb-5 flex w-full items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-left transition-colors hover:bg-accent/10"
-          >
-            <Spinner size="sm" color="accent" aria-hidden="true" />
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-foreground">
-                "{activeRun.mahallaName}" bo'yicha jarayon ketmoqda
-              </span>
-              <span className="block truncate text-xs text-foreground/60">
-                {activeRun.stage ?? "—"} · {activeRun.homesDone}/
-                {activeRun.homesTotal} xonadon · {activeRun.membersAdded} odam
-                kiritildi
-              </span>
-            </span>
-            <ListChecks className="size-4 text-accent" aria-hidden="true" />
-          </button>
+        {/* Faol jarayonlar — bir nechta MFY parallel ketishi mumkin */}
+        {activeRuns.length > 0 && (
+          <div className="mb-5 flex flex-col gap-2">
+            {activeRuns.map((run) => (
+              <button
+                key={run.id}
+                type="button"
+                onClick={() => navigate(`/registration/runs/${run.id}`)}
+                className="flex w-full items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-left transition-colors hover:bg-accent/10"
+              >
+                <Spinner size="sm" color="accent" aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium text-foreground">
+                    "{run.mahallaName}" bo'yicha jarayon ketmoqda
+                  </span>
+                  <span className="block truncate text-xs text-foreground/60">
+                    {run.stage ?? "—"} · {run.homesDone}/{run.homesTotal}{" "}
+                    xonadon · {run.membersAdded} odam kiritildi
+                  </span>
+                </span>
+                <ListChecks className="size-4 text-accent" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
         )}
+
+        <MahallaTokensPanel
+          tokens={tokens}
+          onChanged={load}
+          isBusy={Boolean(startingKey)}
+        />
 
         {/* Yurishlar tarixi — har biriga qaytib kirish mumkin */}
         {runs.length > 0 && (
@@ -206,7 +229,9 @@ const RegistrationPage = () => {
             mahallas={filtered}
             onStart={handleStart}
             startingKey={startingKey}
-            isBusy={Boolean(activeRun) || Boolean(startingKey)}
+                // Faqat SHU mahalla jarayoni ketayotgan bo'lsa
+            // bloklanadi — boshqa mahallalar parallel boshlanaveradi.
+            isBusy={Boolean(startingKey)}
           />
         )}
       </div>

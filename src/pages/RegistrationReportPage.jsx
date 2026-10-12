@@ -3,6 +3,9 @@ import { Button, Chip, Spinner } from "@heroui/react";
 import {
   ArrowLeft,
   BarChart3,
+  Download,
+  FileWarning,
+  MapPin,
   CircleSlash,
   Clock,
   Home,
@@ -124,6 +127,35 @@ const RegistrationReportPage = () => {
   const report = isLoading ? null : loaded.report;
   const runs = loaded.runs;
 
+  // Excel'ni oddiy havola bilan ochib bo'lmaydi: so'rov
+  // Authorization header'ini talab qiladi, tokenni URL'ga qo'yish
+  // esa xavfsiz emas (brauzer tarixi va server loglariga tushadi).
+  // Shuning uchun fayl api orqali olinadi va blob sifatida
+  // saqlanadi.
+  const handleExport = () => {
+    toast.info("Hisobot tayyorlanmoqda...");
+
+    api
+      .get(`/api/registration/runs/${runId}/export`, {
+        responseType: "blob",
+      })
+      .then((blob) => {
+        // Server ma'lumot yo'q desa, JSON qaytaradi — blob emas.
+        if (blob.type?.includes("application/json")) {
+          toast.info("Hisobotda hali ma'lumot yo'q");
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `royxat-${report?.run?.mahallaName ?? "hisobot"}.xlsx`;
+        link.click();
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => toast.error("Hisobotni yuklashda xatolik yuz berdi"));
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-96 items-center justify-center">
@@ -161,6 +193,22 @@ const RegistrationReportPage = () => {
                 : "Barcha yurishlar bo'yicha umumiy"}
             </p>
           </div>
+
+          {/*
+            Excel — mahalla xodimi ro'yxatlar bilan amalda ishlaydi
+            (qo'ng'iroq qiladi, hujjat so'raydi), ekrandagi ro'yxat
+            buning uchun qulay emas.
+          */}
+          {runId && (
+            <Button
+              className="ml-auto"
+              variant="ghost"
+              onPress={handleExport}
+            >
+              <Download className="size-4" aria-hidden="true" />
+              Excel'ga yuklash
+            </Button>
+          )}
         </div>
 
         {/* Yurish tanlash */}
@@ -311,6 +359,104 @@ const RegistrationReportPage = () => {
             </p>
           </div>
         </div>
+
+        {/*
+          Hujjati yaroqsizlar — amaliy ro'yxat. Bu odamlar aktiv,
+          faqat bazadagi hujjati eskirgan: yangi hujjat ma'lumoti
+          olinsa, ularni kiritish mumkin bo'ladi.
+        */}
+        {report?.needDocument?.length > 0 && (
+          <div className="mt-5 rounded-xl border border-border bg-background">
+            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+              <FileWarning className="size-4 text-warning" aria-hidden="true" />
+              <h2 className="text-sm font-semibold text-foreground">
+                Hujjati yangilanishi kerak
+              </h2>
+              <span className="ml-auto text-xs text-foreground/50">
+                {report.needDocument.length} kishi
+              </span>
+            </div>
+
+            <div className="max-h-96 divide-y divide-border overflow-y-auto">
+              {report.needDocument.map((person) => (
+                <div
+                  key={person.id}
+                  className="flex flex-wrap items-center gap-3 px-4 py-2.5"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm text-foreground">
+                      {person.fullName}
+                    </span>
+                    <span className="block text-xs text-foreground/50">
+                      {person.birthDate} · {person.cadasterNumber}
+                    </span>
+                  </span>
+
+                  <span className="font-mono text-xs text-foreground/60">
+                    {person.document}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p className="border-t border-border px-4 py-2.5 text-xs text-foreground/50">
+              Davlat bazasida bu fuqarolar aktiv, lekin ro'yxatdagi hujjati
+              yaroqsiz deb belgilangan — yangi pasport olgan bo'lishi mumkin.
+              Yangi hujjat ma'lumoti kiritilsa, ular ham ro'yxatga olinadi.
+            </p>
+          </div>
+        )}
+
+        {/*
+          Boshqa joyda ro'yxatda turganlar. Mahalla uchun bu
+          shunchaki "xato" emas: odam ko'chib ketgan va ro'yxatni
+          yangilash kerakligini bildiradi.
+        */}
+        {report?.elsewhere?.length > 0 && (
+          <div className="mt-5 rounded-xl border border-border bg-background">
+            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+              <MapPin className="size-4 text-warning" aria-hidden="true" />
+              <h2 className="text-sm font-semibold text-foreground">
+                Boshqa joyda ro'yxatda turganlar
+              </h2>
+              <span className="ml-auto text-xs text-foreground/50">
+                {report.elsewhere.reduce((sum, x) => sum + x.count, 0)} kishi
+              </span>
+            </div>
+
+            <div className="divide-y divide-border">
+              {report.elsewhere.map((place) => (
+                <div
+                  key={`${place.region}-${place.mahalla}`}
+                  className="flex flex-wrap items-center gap-3 px-4 py-2.5"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm text-foreground">
+                      {place.mahalla}
+                    </span>
+                    <span className="block text-xs text-foreground/50">
+                      {place.region} viloyati
+                    </span>
+                  </span>
+
+                  <Chip size="sm" color={place.movedAway ? "warning" : "default"}>
+                    {place.movedAway ? "Ko'chib ketgan" : "Shu mahallada"}
+                  </Chip>
+
+                  <span className="text-sm font-medium text-foreground">
+                    {place.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p className="border-t border-border px-4 py-2.5 text-xs text-foreground/50">
+              Bu odamlar bazadagi ro'yxatda shu mahallada turibdi, lekin
+              platformada boshqa xonadonga biriktirilgan. Platforma bir
+              shaxsni ikki joyda ro'yxatga olishga yo'l bermaydi.
+            </p>
+          </div>
+        )}
 
         {/* Ko'cha kesimida */}
         {report?.byStreet?.length > 0 && (
