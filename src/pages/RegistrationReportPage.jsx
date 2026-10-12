@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button, Chip, Spinner } from "@heroui/react";
 import {
+  Activity,
   ArrowLeft,
   BarChart3,
   Download,
@@ -16,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../config/api";
+import RegistrationTimingChart from "../components/RegistrationTimingChart.jsx";
 
 const RUN_LABELS = {
   pending: "Boshlanmagan",
@@ -247,7 +249,7 @@ const RegistrationReportPage = () => {
             icon={UserCheck}
             label="Ro'yxatga olindi"
             value={members.added ?? 0}
-            hint={`${successPercent}% muvaffaqiyat`}
+            hint={`${members.people ?? 0} odam ko'rib chiqildi · ${successPercent}% muvaffaqiyat`}
             className="text-success"
           />
           <Card
@@ -359,6 +361,32 @@ const RegistrationReportPage = () => {
             </p>
           </div>
         </div>
+
+        {/*
+          So'rov vaqtlari — faqat bitta yurish tanlanganda.
+          "Umumiy" da bir nechta MFY aralashib ketadi va chart
+          ma'nosini yo'qotadi.
+        */}
+        {runId && (
+          <div className="mt-5 rounded-xl border border-border bg-background">
+            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+              <Activity className="size-4 text-accent" aria-hidden="true" />
+              <h2 className="text-sm font-semibold text-foreground">
+                Har bir so'rovga ketgan vaqt
+              </h2>
+              <span className="ml-auto text-xs text-foreground/50">
+                sekundlarda
+              </span>
+            </div>
+
+            <div className="px-4 py-4">
+              <RegistrationTimingChart
+                runId={runId}
+                isRunning={report?.run?.isActive}
+              />
+            </div>
+          </div>
+        )}
 
         {/*
           Hujjati yaroqsizlar — amaliy ro'yxat. Bu odamlar aktiv,
