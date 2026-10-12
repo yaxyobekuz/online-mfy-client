@@ -12,6 +12,9 @@ import FamilyAddPage from "./pages/FamilyAddPage.jsx";
 import CitizensPage from "./pages/CitizensPage.jsx";
 import MahallasPage from "./pages/MahallasPage.jsx";
 import MahallaDetailsPage from "./pages/MahallaDetailsPage.jsx";
+import RegistrationPage from "./pages/RegistrationPage.jsx";
+import RegistrationRunPage from "./pages/RegistrationRunPage.jsx";
+import RegistrationReportPage from "./pages/RegistrationReportPage.jsx";
 import MainLayout from "./layouts/MainLayout.jsx";
 import { StoreProvider } from "./context/StoreContext.jsx";
 
@@ -40,6 +43,15 @@ const App = () => {
           <Route path="/citizens" element={<CitizensPage />} />
           <Route path="/mahallas" element={<MahallasPage />} />
           <Route path="/mahallas/:key" element={<MahallaDetailsPage />} />
+          <Route path="/registration" element={<RegistrationPage />} />
+          <Route
+            path="/registration/report"
+            element={<RegistrationReportPage />}
+          />
+          <Route
+            path="/registration/runs/:runId"
+            element={<RegistrationRunPage />}
+          />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,5 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
+  BarChart3,
+  ClipboardCheck,
   FileSpreadsheet,
   Home,
   HousePlus,
@@ -17,6 +19,16 @@ const links = [
   { to: "/family-add", label: "Oila a'zolarini kiritish", icon: UserPlus },
   { to: "/citizens", label: "Umumiy fuqarolar bazasi", icon: Users },
   { to: "/mahallas", label: "Mahallalar ro'yxati", icon: MapPinned },
+  {
+    to: "/registration",
+    label: "MFY bo'yicha ro'yxatga olish",
+    icon: ClipboardCheck,
+  },
+  {
+    to: "/registration/report",
+    label: "Statistika va hisobotlar",
+    icon: BarChart3,
+  },
 ];
 
 const Sidebar = () => {
