@@ -53,7 +53,7 @@ const FamilyAddStatus = ({ record }) => {
  */
 const RawRecordsTable = ({ records, withCadasterColumn = true }) => (
   <Table aria-label="Xom ma'lumot jadvali">
-    <Table.Content>
+    <Table.Content aria-label="Xom ma'lumot jadvali">
       <Table.Header
         columns={
           withCadasterColumn

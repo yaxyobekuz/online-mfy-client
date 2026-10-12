@@ -22,7 +22,7 @@ const RegistrationHomesTable = ({ homes, onSelect }) => {
   return (
     <div className="overflow-x-auto">
       <Table aria-label="Yurishdagi xonadonlar">
-        <Table.Content>
+        <Table.Content aria-label="Yurishdagi xonadonlar">
           <Table.Header columns={columns}>
             {(column) => (
               <Table.Column isRowHeader={column.id === "index"}>

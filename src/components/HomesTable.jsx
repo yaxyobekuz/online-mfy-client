@@ -36,7 +36,7 @@ const HomesTable = ({
 
   return (
     <Table aria-label="Xonadonlar jadvali">
-      <Table.Content>
+      <Table.Content aria-label="Xonadonlar jadvali">
         <Table.Header columns={columns}>
           {(column) => (
             <Table.Column isRowHeader={column.id === columns[0].id}>

@@ -10,7 +10,7 @@ const columns = [
 
 const FamilyMembersTable = ({ members }) => (
   <Table aria-label="Oila a'zolari jadvali">
-    <Table.Content>
+    <Table.Content aria-label="Oila a'zolari jadvali">
       <Table.Header columns={columns}>
         {(column) => (
           <Table.Column isRowHeader={column.id === "fullName"}>

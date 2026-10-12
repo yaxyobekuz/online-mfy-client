@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../config/api";
 import RegistrationMahallasTable from "../components/RegistrationMahallasTable.jsx";
 import MahallaTokensPanel from "../components/MahallaTokensPanel.jsx";
+import RateLimitMonitor from "../components/RateLimitMonitor.jsx";
+import { useRegistrationStream } from "../hooks/useRegistrationStream.js";
 
 /**
  * MFY bo'yicha oila a'zolarini ro'yxatdan o'tkazish — boshlash
@@ -22,6 +24,9 @@ const RegistrationPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [startingKey, setStartingKey] = useState(null);
+
+  // Jonli oqim — holat va API limiti real vaqtda keladi.
+  const stream = useRegistrationStream(true);
 
   const load = useCallback(
     () =>
@@ -45,9 +50,13 @@ const RegistrationPage = () => {
   }, [load]);
 
   // Faol yurishlar. Turli MFY lar PARALLEL ketaveradi — har
-  // birining o'z tokeni va o'z rate-limit oqimi bor. Shuning uchun
-  // bitta emas, hammasi ko'rsatiladi.
-  const activeRuns = runs.filter((run) => run.isActive);
+  // birining o'z tokeni va o'z rate-limit oqimi bor.
+  //
+  // Jonli oqim ulangan bo'lsa, undagi ma'lumot yangiroq (har
+  // sekundda yangilanadi); aks holda sahifa yuklanganda olingan
+  // ro'yxatga qaytamiz.
+  const liveRuns = stream.runs.length ? stream.runs : runs;
+  const activeRuns = liveRuns.filter((run) => run.isActive);
 
   const handleStart = (mahalla) => {
     setStartingKey(mahalla.key);
@@ -171,6 +180,8 @@ const RegistrationPage = () => {
             ))}
           </div>
         )}
+
+        <RateLimitMonitor runs={liveRuns} isConnected={stream.isConnected} />
 
         <MahallaTokensPanel
           tokens={tokens}

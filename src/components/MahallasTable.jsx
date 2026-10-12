@@ -28,7 +28,7 @@ const MahallasTable = ({
   return (
     <div className="overflow-x-auto">
       <Table aria-label="Mahallalar ro'yxati">
-        <Table.Content>
+        <Table.Content aria-label="Mahallalar ro'yxati">
           <Table.Header columns={columns}>
             {(column) => (
               <Table.Column isRowHeader={column.id === "index"}>

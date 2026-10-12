@@ -10,7 +10,7 @@ const columns = [
 
 const RawHomesTable = ({ homes, onRowPress }) => (
   <Table aria-label="Xom xonadonlar jadvali">
-    <Table.Content>
+    <Table.Content aria-label="Xom xonadonlar jadvali">
       <Table.Header columns={columns}>
         {(column) => (
           <Table.Column isRowHeader={column.id === "cadasterNumber"}>

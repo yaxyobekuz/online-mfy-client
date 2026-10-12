@@ -81,12 +81,37 @@ const RegistrationProgress = ({ run, currentHome }) => {
           </p>
         </div>
 
-        {waitSeconds > 0 && (
-          <Chip size="sm" color="warning" className="ml-auto">
-            <Clock className="size-3.5" aria-hidden="true" />
-            Tashqi API limiti — {waitSeconds} s
-          </Chip>
-        )}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {/*
+            Tashqi API tezligi — jarayon "qotib qolgandek"
+            ko'rinmasligi uchun. Tanaffus qancha katta bo'lsa,
+            limitga shuncha yaqin ishlanmoqda.
+          */}
+          {run.rateLimit?.delayMs != null && (
+            <span className="text-xs text-foreground/60">
+              tanaffus{" "}
+              <span className="font-medium text-foreground">
+                {(run.rateLimit.delayMs / 1000).toFixed(1)} s
+              </span>
+              {run.rateLimit.lastMinute > 0 && (
+                <>
+                  {" · "}
+                  <span className="font-medium text-foreground">
+                    {run.rateLimit.lastMinute}
+                  </span>{" "}
+                  so'rov/daq
+                </>
+              )}
+            </span>
+          )}
+
+          {waitSeconds > 0 && (
+            <Chip size="sm" color="warning">
+              <Clock className="size-3.5" aria-hidden="true" />
+              Tashqi API limiti — {waitSeconds} s
+            </Chip>
+          )}
+        </div>
       </div>
 
       {run.error && (

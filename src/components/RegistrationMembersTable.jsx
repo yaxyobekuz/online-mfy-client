@@ -23,7 +23,7 @@ const RegistrationMembersTable = ({ members, startIndex = 0, onSelect }) => {
   return (
     <div className="overflow-x-auto">
       <Table aria-label="Ro'yxatga olingan odamlar">
-        <Table.Content>
+        <Table.Content aria-label="Ro'yxatga olingan odamlar">
           <Table.Header columns={columns}>
             {(column) => (
               <Table.Column isRowHeader={column.id === "index"}>

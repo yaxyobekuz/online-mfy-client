@@ -20,7 +20,7 @@ const columns = [
 const CitizensTable = ({ citizens }) => (
   <div className="overflow-x-auto">
     <Table aria-label="Umumiy fuqarolar bazasi">
-      <Table.Content>
+      <Table.Content aria-label="Umumiy fuqarolar bazasi">
         <Table.Header columns={columns}>
           {(column) => (
             <Table.Column isRowHeader={column.id === "rowNumber"}>

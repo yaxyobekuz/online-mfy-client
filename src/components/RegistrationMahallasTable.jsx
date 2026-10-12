@@ -48,7 +48,7 @@ const RegistrationMahallasTable = ({
   return (
     <div className="overflow-x-auto">
       <Table aria-label="Ro'yxatga olish uchun mahallalar">
-        <Table.Content>
+        <Table.Content aria-label="Ro'yxatga olish uchun mahallalar">
           <Table.Header columns={columns}>
             {(column) => (
               <Table.Column isRowHeader={column.id === "index"}>
