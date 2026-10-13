@@ -1,0 +1,229 @@
+import { useEffect, useState } from "react";
+import { Loader, Pause, Play } from "lucide-react";
+import { useDashboard } from "../hooks/useDashboard.js";
+import KpiCard from "../components/KpiCard.jsx";
+import LiveFeed from "../components/LiveFeed.jsx";
+import MemberDetailsModal from "../components/MemberDetailsModal.jsx";
+
+/**
+ * Asosiy sahifa — BOSHQARUV paneli (Figma node 1:2).
+ *
+ * Bu sahifa ishni o'zi bajarmaydi: start berilgandan keyin jarayon
+ * SERVERDA orqa fonda ketaveradi. Client panel faqat kuzatish va
+ * boshqarish uchun — sahifa yopilsa ham ish to'xtamaydi.
+ */
+
+/** Foizni butun songa keltiradi; bo'luvchi 0 bo'lsa — 0. */
+const percentOf = (part, total) =>
+  total > 0 ? Math.round((part / total) * 100) : 0;
+
+const DashboardPage = () => {
+  const dashboard = useDashboard();
+
+  const [memberId, setMemberId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const stats = dashboard.stats ?? {
+    peopleTotal: 0,
+    added: 0,
+    failed: 0,
+    pending: 0,
+    homesTotal: 0,
+    percent: 0,
+  };
+
+  const openDetails = (member) => {
+    setMemberId(member.id);
+    setIsModalOpen(true);
+  };
+
+  // Tashqi API limiti: so'rov o'rtacha qancha vaqt olayotgani.
+  const delayMs = dashboard.rateLimit?.delayMs ?? null;
+
+  // Limit tufayli kutish qoldi (sekund).
+  const waitingUntil =
+    dashboard.rateLimit?.waitingUntil ?? dashboard.run?.waitingUntil ?? null;
+
+  return (
+    <div className="flex h-svh min-w-0 flex-1 flex-col py-2 pr-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-3xl bg-panel px-6 py-2">
+        {/* --- Sarlavha va boshqaruv --- */}
+        <header className="flex w-full shrink-0 flex-wrap items-center justify-between gap-4 py-2">
+          <p className="text-xl font-bold text-ink">
+            Xush kelibsiz
+            {dashboard.user?.username ? `, ${dashboard.user.username}` : ""}
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-6">
+            {delayMs !== null && (
+              <p className="px-6 py-4 text-base font-medium text-muted">
+                O&rsquo;rtacha 1ta so&rsquo;rov{" "}
+                {(delayMs / 1000).toFixed(1)}s
+              </p>
+            )}
+
+            {!dashboard.isRunning ? (
+              <button
+                type="button"
+                onClick={dashboard.start}
+                disabled={dashboard.isBusy}
+                className="flex items-center gap-4 rounded-full bg-ok-soft px-6 py-4 text-base font-medium text-ok transition-opacity hover:opacity-80 disabled:opacity-50"
+              >
+                <Play className="size-6" aria-hidden="true" />
+                Boshlash
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={dashboard.pause}
+                disabled={dashboard.isBusy}
+                className="flex items-center gap-4 rounded-full bg-bad-soft px-6 py-4 text-base font-medium text-bad transition-opacity hover:opacity-80 disabled:opacity-50"
+              >
+                <Pause className="size-6" aria-hidden="true" />
+                To&rsquo;xtatish
+              </button>
+            )}
+
+            {/*
+              Tashqi API limiti: so'rovlar soni oshib ketganda
+              server kutadi. Buni yashirish noto'g'ri bo'lardi —
+              foydalanuvchi "osilib qoldi" deb o'ylaydi.
+            */}
+            <WaitingBadge until={waitingUntil} />
+          </div>
+        </header>
+
+        {/* --- Ko'rsatkichlar --- */}
+        <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+          <KpiCard label="Jami aholi" value={`${stats.peopleTotal} ta`} />
+          <KpiCard
+            label="Ro'yxatga olingan aholi"
+            value={`${stats.added} ta`}
+            percent={percentOf(stats.added, stats.peopleTotal)}
+            tone="ok"
+          />
+          <KpiCard
+            label="Ro'yxatga olib bo'lmagan aholi"
+            value={`${stats.failed} ta`}
+            percent={percentOf(stats.failed, stats.peopleTotal)}
+            tone="bad"
+          />
+          <KpiCard
+            label="Ro'yxatga olinish kutilmoqda"
+            value={`${stats.pending} ta`}
+            percent={percentOf(stats.pending, stats.peopleTotal)}
+            tone="pending"
+          />
+          <KpiCard label="Jami xonadon" value={`${stats.homesTotal} ta`} />
+        </div>
+
+        {/* --- Jarayon chizig'i --- */}
+        <div
+          className="flex h-2 w-full shrink-0 items-center overflow-hidden rounded-full bg-canvas"
+          role="progressbar"
+          aria-valuenow={stats.percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Xonadonlar bo'yicha jarayon"
+        >
+          <div
+            className="h-full rounded-full bg-brand transition-[width] duration-500"
+            style={{ width: `${stats.percent}%` }}
+          />
+        </div>
+
+        {/* --- Jonli kuzatuv --- */}
+        <LiveFeed
+          members={dashboard.members}
+          onDetails={openDetails}
+          note={<StatusNote dashboard={dashboard} />}
+          emptyHint={
+            dashboard.isLoading
+              ? "Yuklanmoqda..."
+              : dashboard.run
+                ? "Hozircha yozuv yo'q"
+                : 'Jarayon hali boshlanmagan — "Boshlash" tugmasini bosing'
+          }
+        />
+      </div>
+
+      <MemberDetailsModal
+        memberId={memberId}
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
+    </div>
+  );
+};
+
+/**
+ * Limit tufayli kutish — qolgan sekundlar sanab turadi.
+ *
+ * Nega alohida komponent: har sekundda qayta render bo'ladi, shuni
+ * butun sahifaga yoyish ortiqcha bo'lardi.
+ */
+const WaitingBadge = ({ until }) => {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!until) return undefined;
+
+    const timer = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(timer);
+  }, [until]);
+
+  if (!until) return null;
+
+  const left = Math.ceil((new Date(until).getTime() - now) / 1000);
+  if (left <= 0) return null;
+
+  return (
+    <div className="flex items-center gap-4 rounded-full bg-warn-soft px-6 py-4 text-base font-medium text-warn">
+      <Loader className="size-6 animate-spin" aria-hidden="true" />
+      Kutilmoqda
+      <span>{left}s</span>
+    </div>
+  );
+};
+
+/**
+ * Hozir nima bo'layotgani — jonli kuzatuv sarlavhasining o'ng
+ * tomonida, bitta qisqa qator.
+ *
+ * Maketda bu yer bo'sh turadi, lekin jarayon qaysi xonadonda
+ * ketayotganini ko'rsatmaslik kuzatuvning ma'nosini yo'qotardi.
+ */
+const StatusNote = ({ dashboard }) => {
+  const { run, currentHome, stats } = dashboard;
+
+  if (!run) return null;
+
+  if (run.isStale) {
+    return (
+      <span className="text-warn">
+        Jarayon uzilgan — &ldquo;Boshlash&rdquo; bilan tiklang
+      </span>
+    );
+  }
+
+  if (run.error) return <span className="text-bad">{run.error}</span>;
+
+  if (!run.isActive) {
+    return (
+      <span>
+        To&rsquo;xtatilgan · xonadon {stats?.homesDone}/{stats?.homesTotal}
+      </span>
+    );
+  }
+
+  return (
+    <span className="truncate">
+      Xonadon {stats?.homesDone}/{stats?.homesTotal}
+      {currentHome
+        ? ` · ${currentHome.streetName}, ${currentHome.homeNum}-uy`
+        : ""}
+    </span>
+  );
+};
+
+export default DashboardPage;
