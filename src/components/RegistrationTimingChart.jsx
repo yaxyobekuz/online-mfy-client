@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Spinner } from "@heroui/react";
 import { toast } from "sonner";
 import api from "../config/api";
@@ -19,6 +19,13 @@ const HEIGHT = 180;
 const PAD = { top: 12, right: 8, bottom: 20, left: 38 };
 
 // Holatga qarab nuqta rangi — xato qayerda bo'lgani ko'rinsin.
+const STATUS_LABEL = {
+  added: "Kiritildi",
+  exists: "Allaqachon bor",
+  skipped: "O'tkazildi",
+  failed: "Xatolik",
+};
+
 const DOT_COLOR = {
   added: "#10b981",
   exists: "#6366f1",
@@ -28,7 +35,9 @@ const DOT_COLOR = {
 
 const RegistrationTimingChart = ({ runId, isRunning }) => {
   const [data, setData] = useState(null);
+  // Kursor turgan nuqta indeksi.
   const [hover, setHover] = useState(null);
+  const svgRef = useRef(null);
 
   useEffect(() => {
     if (!runId) return undefined;
@@ -88,6 +97,33 @@ const RegistrationTimingChart = ({ runId, isRunning }) => {
   const x = (i) => PAD.left + (i / (points.length - 1)) * innerW;
   const y = (v) => PAD.top + innerH - (v / maxY) * innerH;
 
+  /**
+   * Kursor chart ustida yurganda eng yaqin nuqtani topadi.
+   *
+   * Nuqtalarning o'zini ushlash qiyin (kichik, ba'zilari umuman
+   * chizilmaydi), shuning uchun butun maydon bo'ylab x koordinata
+   * bo'yicha eng yaqini tanlanadi — chiziqli chartlarda odatiy yo'l.
+   */
+  const handleMove = (event) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const box = svg.getBoundingClientRect();
+    // Ekrandagi o'lcham viewBox'dan farq qiladi — nisbatga
+    // o'tkazamiz.
+    const svgX = ((event.clientX - box.left) / box.width) * WIDTH;
+
+    const ratio = (svgX - PAD.left) / innerW;
+    const index = Math.round(ratio * (points.length - 1));
+
+    if (index < 0 || index >= points.length) {
+      setHover(null);
+      return;
+    }
+
+    setHover(index);
+  };
+
   const line = points
     .map((p, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(p.seconds).toFixed(1)}`)
     .join(" ");
@@ -125,12 +161,57 @@ const RegistrationTimingChart = ({ runId, isRunning }) => {
         </span>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
+        {/*
+          Tooltip — nuqta yonida suzib turadi. SVG ichida emas,
+          ustida: shunda matn o'lchami viewBox masshtabiga
+          bog'lanmaydi va har doim bir xil o'qiladi.
+        */}
+        {hover != null && points[hover] && (
+          <div
+            className="pointer-events-none absolute z-10 min-w-36 -translate-x-1/2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs shadow-lg"
+            style={{
+              left: `${(x(hover) / WIDTH) * 100}%`,
+              // Nuqtadan sal tepada. Juda yuqori bo'lsa pastga
+              // tushiramiz, aks holda chartdan chiqib ketadi.
+              top: `${Math.max(2, (y(points[hover].seconds) / HEIGHT) * 100 - 32)}%`,
+            }}
+          >
+            <div className="flex items-center gap-1.5">
+              <span
+                className="size-2 shrink-0 rounded-full"
+                style={{
+                  background: DOT_COLOR[points[hover].status] ?? "#94a3b8",
+                }}
+              />
+              <span className="font-semibold text-foreground">
+                {points[hover].seconds} s
+              </span>
+              <span className="ml-auto text-foreground/50">
+                {time(points[hover].at)}
+              </span>
+            </div>
+
+            <div className="mt-0.5 text-foreground/60">
+              {STATUS_LABEL[points[hover].status] ?? points[hover].status}
+            </div>
+
+            {points[hover].name && (
+              <div className="mt-0.5 max-w-48 truncate text-foreground/50">
+                {points[hover].name}
+              </div>
+            )}
+          </div>
+        )}
+
         <svg
+          ref={svgRef}
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           className="h-48 w-full min-w-[520px]"
           role="img"
           aria-label="Har bir so'rovga ketgan vaqt"
+          onMouseMove={handleMove}
+          onMouseLeave={() => setHover(null)}
         >
           {/* Y o'qi chiziqlari */}
           {ticks.map((t) => (
@@ -165,10 +246,11 @@ const RegistrationTimingChart = ({ runId, isRunning }) => {
           />
 
           {/* Nuqtalar — holatga qarab rangli. Ko'p bo'lsa faqat
-              sezilarli (sekin) so'rovlar belgilanadi. */}
+              sezilarli (sekin) so'rovlar belgilanadi, lekin kursor
+              turgan nuqta doim ko'rinadi. */}
           {points.map((p, i) => {
             const isSlow = p.seconds > data.stats.avg * 1.5;
-            if (points.length > 60 && !isSlow) return null;
+            if (points.length > 60 && !isSlow && hover !== i) return null;
 
             return (
               <circle
@@ -177,12 +259,23 @@ const RegistrationTimingChart = ({ runId, isRunning }) => {
                 cy={y(p.seconds)}
                 r={hover === i ? 4 : 2.5}
                 fill={DOT_COLOR[p.status] ?? "#94a3b8"}
-                onMouseEnter={() => setHover(i)}
-                onMouseLeave={() => setHover(null)}
-                className="cursor-pointer"
               />
             );
           })}
+
+          {/* Kursor turgan joydagi vertikal chiziq — qaysi nuqta
+              tanlanganini aniq ko'rsatadi. */}
+          {hover != null && points[hover] && (
+            <line
+              x1={x(hover)}
+              x2={x(hover)}
+              y1={PAD.top}
+              y2={PAD.top + innerH}
+              stroke="currentColor"
+              className="text-foreground/25"
+              strokeWidth="1"
+            />
+          )}
 
           {/* X o'qi: boshlanish va tugash vaqti */}
           <text
@@ -203,22 +296,7 @@ const RegistrationTimingChart = ({ runId, isRunning }) => {
         </svg>
       </div>
 
-      {hover != null && points[hover] && (
-        <p className="mt-1 truncate text-xs text-foreground/60">
-          <span className="font-medium text-foreground">
-            {points[hover].seconds} s
-          </span>
-          {" · "}
-          {time(points[hover].at)}
-          {points[hover].name && ` · ${points[hover].name}`}
-        </p>
-      )}
 
-      <p className="mt-2 text-xs text-foreground/50">
-        Baland cho'qqilar — tashqi API limitidagi kutish (56 soniyagacha),
-        past qism — tez ishlagan payt. Nuqta rangi: yashil kiritildi,
-        qizil xatolik, sariq o'tkazildi.
-      </p>
     </div>
   );
 };

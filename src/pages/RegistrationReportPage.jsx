@@ -21,16 +21,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../config/api";
 import RegistrationTimingChart from "../components/RegistrationTimingChart.jsx";
 
-const RUN_LABELS = {
-  pending: "Boshlanmagan",
-  preparing: "Tayyorlanmoqda",
-  running: "Ketmoqda",
-  paused: "To'xtatib turildi",
-  done: "Tugadi",
-  stopped: "To'xtatildi",
-  error: "Xatolik",
-};
-
 const Card = ({ icon: Icon, label, value, hint, className }) => (
   <div className="rounded-xl border border-border bg-background p-4">
     <div className="flex items-center gap-2 text-xs text-foreground/60">
@@ -46,7 +36,7 @@ const Card = ({ icon: Icon, label, value, hint, className }) => (
 
 // Nisbatlarni gorizontal chiziqcha bilan ko'rsatadi — sonlar
 // yonida ulush ham ko'rinib turishi uchun.
-const Bar = ({ label, count, total, color = "bg-accent", sample, onClick }) => {
+const Bar = ({ label, count, total, color = "bg-accent", onClick }) => {
   const percent = total > 0 ? Math.round((count / total) * 100) : 0;
 
   const content = (
@@ -63,11 +53,6 @@ const Bar = ({ label, count, total, color = "bg-accent", sample, onClick }) => {
         <div className={`h-full rounded-full ${color}`} style={{ width: `${percent}%` }} />
       </div>
 
-      {sample && (
-        <p className="mt-1 truncate text-xs text-foreground/40" title={sample}>
-          {sample}
-        </p>
-      )}
     </>
   );
 
@@ -195,7 +180,7 @@ const RegistrationReportPage = () => {
             </h1>
             <p className="text-sm text-foreground/60">
               {report?.run
-                ? `"${report.run.mahallaName}" — ${RUN_LABELS[report.run.status] ?? report.run.status}`
+                ? `"${report.run.mahallaName}"`
                 : "Barcha yurishlar bo'yicha umumiy"}
             </p>
           </div>
@@ -267,14 +252,12 @@ const RegistrationReportPage = () => {
             icon={Users}
             label="Allaqachon ro'yxatda"
             value={members.exists ?? 0}
-            hint="Qayta kiritilmadi"
             className="text-foreground/60"
           />
           <Card
             icon={Clock}
             label="O'rtacha vaqt"
             value={report?.avgMs ? `${(report.avgMs / 1000).toFixed(1)} s` : "—"}
-            hint="Bitta odam uchun"
           />
         </div>
 
@@ -311,7 +294,6 @@ const RegistrationReportPage = () => {
                     count={reason.count}
                     total={notAdded}
                     color="bg-warning"
-                    sample={reason.sample}
                     // Sababga bosilganda shu sabab bo'yicha odamlar
                     // ro'yxati ochiladi — tafsilotga o'tish uchun.
                     onClick={
@@ -362,12 +344,6 @@ const RegistrationReportPage = () => {
               )}
             </div>
 
-            <p className="border-t border-border px-4 py-2.5 text-xs text-foreground/50">
-              Ta'lim darajasi na bazada, na davlat reyestrida bor — yosh va
-              jinsga qarab O'zbekiston statistikasiga yaqin taqsimot bilan
-              belgilanadi. 7–17 yosh har doim "O'rta", 7 yoshgacha
-              "Ma'lumoti yo'q".
-              </p>
             </div>
 
             {/*
