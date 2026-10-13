@@ -1,58 +1,108 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Spinner } from "@heroui/react";
-import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import api from "../config/api";
-import { useStore } from "../context/useStore.js";
+import {
+  clearAccounts,
+  getAccounts,
+  getActiveAccount,
+  setAccountMahalla,
+  upsertAccount,
+} from "../config/accounts.js";
 import Sidebar from "../components/Sidebar.jsx";
 
 const MainLayout = () => {
-  const navigate = useNavigate();
-  const { set, remove, store } = useStore();
+  // Hisoblar ro'yxati va faol hisob — butun ilovaning "kim
+  // nomidan ishlayapmiz" savoliga javobi.
+  const [accounts, setAccounts] = useState(() => getAccounts());
+  const [active, setActive] = useState(() => getActiveAccount());
 
-  const hasToken = localStorage.getItem("accessToken");
+  // Yuklangan ma'lumot qaysi hisobga tegishli ekani kalit bilan
+  // saqlanadi: shunda "yuklanyaptimi" savoli state'ning o'zidan
+  // ko'rinadi va effect boshida setState chaqirish kerak
+  // bo'lmaydi (React buni tavsiya qilmaydi).
+  const [loaded, setLoaded] = useState({ uid: null, mahallaName: null });
 
-  // Hook'lar erta `return` dan OLDIN turadi: React ularning har
-  // doim bir xil tartibda chaqirilishini talab qiladi. Token
-  // yo'qolganda (masalan chiqishda) tartib buzilib, ilova
-  // qulashi mumkin edi.
-  const [isLoading, setIsLoading] = useState(true);
+  const hasAccount = Boolean(active?.token);
+  const activeUid = active?.uid ?? null;
+
+  // Hisob almashganda ro'yxatni ham, faolni ham qayta o'qiymiz.
+  const refreshAccounts = useCallback(() => {
+    setAccounts(getAccounts());
+    setActive(getActiveAccount());
+  }, []);
 
   useEffect(() => {
-    // Token bo'lmasa so'rov yubormaymiz — pastda login'ga
-    // yo'naltiriladi.
-    if (!hasToken) return;
+    if (!hasAccount) return undefined;
+
+    let cancelled = false;
 
     api
       .get("/api/user")
       .then((user) => {
-        set("user", user);
+        // Hisob eski (`uid` siz) yozuvdan kelgan bo'lishi mumkin —
+        // serverdan kelgan ma'lumot bilan to'ldiramiz.
+        if (!activeUid && user?.uid) {
+          upsertAccount({
+            uid: user.uid,
+            username: user.username,
+            token: active.token,
+          });
+          if (!cancelled) refreshAccounts();
+        }
 
         // MFY nomi chap panelda har sahifada ko'rinib turishi
         // kerak, shuning uchun uni sahifalar emas, layout o'qiydi.
         return api
           .get("/api/dashboard")
-          .then((data) => set("mahallaName", data.mahalla?.name ?? null))
+          .then((data) => {
+            const name = data.mahalla?.name ?? null;
+            const uid = user?.uid ?? activeUid;
+
+            // Nomni hisobga yozib qo'yamiz: hisoblar ro'yxatida
+            // qaysi biri qaysi mahalla ekani ko'rinib tursin.
+            if (uid) setAccountMahalla(uid, name);
+
+            if (!cancelled) {
+              setLoaded({ uid: activeUid, mahallaName: name });
+              refreshAccounts();
+            }
+          })
           .catch(() => {
             // MFY hali aniqlanmagan bo'lishi mumkin — bu xato emas.
+            if (!cancelled) setLoaded({ uid: activeUid, mahallaName: null });
           });
       })
       .catch(() => {
-        remove("user");
-        localStorage.removeItem("accessToken");
-        navigate("/login");
-      })
-      .finally(() => setIsLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasToken]);
+        // Token yaroqsiz — hisoblarni tozalab, kirish sahifasiga.
+        clearAccounts();
+        if (!cancelled) refreshAccounts();
+      });
 
-  if (!hasToken) return <Navigate to="/login" replace />;
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAccount, activeUid, active?.token, refreshAccounts]);
+
+  if (!hasAccount) return <Navigate to="/login" replace />;
+
+  const isLoading = loaded.uid !== activeUid;
   if (isLoading) return <LoadingContent />;
 
   return (
     <div className="flex h-svh bg-canvas">
-      {/* MFY nomini Asosiy sahifa store'ga yozadi. */}
-      <Sidebar mahallaName={store.mahallaName} />
-      <Outlet />
+      <Sidebar
+        mahallaName={loaded.mahallaName}
+        active={active}
+        accounts={accounts}
+        onAccountChanged={refreshAccounts}
+      />
+      {/*
+        `key` — hisob almashganda sahifa butunlay qaytadan
+        quriladi. Aks holda eski mahallaning ko'rsatkichlari
+        yangisi kelguncha ekranda qolib turardi.
+      */}
+      <Outlet key={activeUid ?? "default"} context={{ accountUid: activeUid }} />
     </div>
   );
 };
