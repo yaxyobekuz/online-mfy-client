@@ -1,14 +1,38 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
+/*
+ * Figma dizayni (node 1:2) ranglari.
+ *
+ * Qiymatlar to'g'ridan-to'g'ri maketdan olingan. Tailwind v4 da
+ * @theme ichidagi har bir o'zgaruvchi avtomatik utility'ga aylanadi:
+ * --color-ink  ->  text-ink / bg-ink / border-ink.
+ */
 @theme {
 	--font-sans: "Inter", sans-serif;
+
+	/* Asosiy matn (#333) va ikkinchi darajali matn (#777) */
+	--color-ink: #333333;
+	--color-muted: #777777;
+
+	/* Fon: sahifa oq, panellar och kulrang */
+	--color-canvas: #ffffff;
+	--color-panel: #f5f5f5;
+
+	/* Holat ranglari */
+	--color-brand: #0088ff;
+	--color-ok: #34c759;
+	--color-bad: #c73434;
+	--color-warn: #c77934;
+	--color-pending: #c79434;
+
+	/* Yumshoq fon variantlari (maketda 10% shaffoflik) */
+	--color-brand-soft: rgb(0 136 255 / 0.1);
+	--color-ok-soft: rgb(52 199 89 / 0.1);
+	--color-bad-soft: rgb(199 52 52 / 0.1);
+	--color-warn-soft: rgb(199 121 52 / 0.1);
 }
 
 [data-sonner-toaster] {
 	font-family: var(--font-sans) !important;
-}
-
-.container{
-	@apply max-w-7xl mx-auto px-4;
 }
