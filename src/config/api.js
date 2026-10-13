@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getActiveToken } from "./accounts.js";
 
 /**
  * Tashqi so'rovlar uchun asosiy manzil.
@@ -16,8 +17,22 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
+// Token FAOL hisobdan olinadi. Boshqa mahallaga o'tish shu
+// yerda hal bo'ladi: hisob almashsa, keyingi so'rovlar o'z-o'zidan
+// yangi token bilan ketadi va server ularni boshqa MFY deb
+// qabul qiladi.
+//
+// Sarlavha ataylab har so'rovda qayta o'qiladi (bir marta
+// o'qib qo'yilmaydi) — aks holda hisob almashgach eski token
+// ishlatilib qolardi.
 api.interceptors.request.use((config) => {
-  const accessToken = localStorage.getItem("accessToken");
+  // So'rovning o'zi token bergan bo'lsa, tegmaymiz: kirish va yangi
+  // hisob qo'shish aynan BOSHQA token bilan tekshiriladi (hali
+  // ro'yxatda yo'q token). Aks holda interceptor uni faol hisob
+  // tokeniga almashtirib, tekshiruv noto'g'ri ketardi.
+  if (config.headers.Authorization) return config;
+
+  const accessToken = getActiveToken();
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
