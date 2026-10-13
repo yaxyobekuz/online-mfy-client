@@ -1,20 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
-import HomePage from "./pages/HomePage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
-import StreetHomesPage from "./pages/StreetHomesPage.jsx";
-import HomesPage from "./pages/HomesPage.jsx";
-import HomeDetailsPage from "./pages/HomeDetailsPage.jsx";
-import RawRecordsPage from "./pages/RawRecordsPage.jsx";
-import RawHomesPage from "./pages/RawHomesPage.jsx";
-import RawHomeDetailsPage from "./pages/RawHomeDetailsPage.jsx";
-import FamilyAddPage from "./pages/FamilyAddPage.jsx";
-import CitizensPage from "./pages/CitizensPage.jsx";
-import MahallasPage from "./pages/MahallasPage.jsx";
-import MahallaDetailsPage from "./pages/MahallaDetailsPage.jsx";
-import RegistrationPage from "./pages/RegistrationPage.jsx";
-import RegistrationRunPage from "./pages/RegistrationRunPage.jsx";
-import RegistrationReportPage from "./pages/RegistrationReportPage.jsx";
+import DashboardPage from "./pages/DashboardPage.jsx";
+import StatisticsPage from "./pages/StatisticsPage.jsx";
+import DatabasePage from "./pages/DatabasePage.jsx";
 import MainLayout from "./layouts/MainLayout.jsx";
 import { StoreProvider } from "./context/StoreContext.jsx";
 
@@ -26,32 +15,9 @@ const App = () => {
         <Route path="/login" element={<LoginPage />} />
 
         <Route element={<MainLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="/streets/:streetId" element={<StreetHomesPage />} />
-          <Route
-            path="/streets/:streetId/homes/:homeId"
-            element={<HomeDetailsPage />}
-          />
-          <Route path="/homes" element={<HomesPage />} />
-          <Route path="/raw-records" element={<RawRecordsPage />} />
-          <Route path="/raw-homes" element={<RawHomesPage />} />
-          <Route
-            path="/raw-homes/:cadasterNumber"
-            element={<RawHomeDetailsPage />}
-          />
-          <Route path="/family-add" element={<FamilyAddPage />} />
-          <Route path="/citizens" element={<CitizensPage />} />
-          <Route path="/mahallas" element={<MahallasPage />} />
-          <Route path="/mahallas/:key" element={<MahallaDetailsPage />} />
-          <Route path="/registration" element={<RegistrationPage />} />
-          <Route
-            path="/registration/report"
-            element={<RegistrationReportPage />}
-          />
-          <Route
-            path="/registration/runs/:runId"
-            element={<RegistrationRunPage />}
-          />
+          <Route index element={<DashboardPage />} />
+          <Route path="/statistika" element={<StatisticsPage />} />
+          <Route path="/baza" element={<DatabasePage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
