@@ -3,9 +3,11 @@ import { Button, Chip, Spinner } from "@heroui/react";
 import {
   Activity,
   ArrowLeft,
+  ChevronDown,
   BarChart3,
   Download,
   FileWarning,
+  ListFilter,
   MapPin,
   CircleSlash,
   Clock,
@@ -98,6 +100,8 @@ const RegistrationReportPage = () => {
   // o'zida turadi — boshqa yurish tanlanganda eskisi ko'rinmaydi va
   // effect boshida tozalash (setState) kerak bo'lmaydi.
   const [loaded, setLoaded] = useState({ key: null, report: null, runs: [] });
+  // Qo'shimcha ro'yxatlar yopiq turadi — kundalik ishda kerak emas.
+  const [showDetails, setShowDetails] = useState(false);
 
   const load = useCallback(
     () =>
@@ -281,7 +285,7 @@ const RegistrationReportPage = () => {
           <Card icon={Home} label="Xatolik" value={homes.failed ?? 0} className={homes.failed > 0 ? "text-danger" : undefined} />
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid items-start gap-5 lg:grid-cols-2">
           {/* Nega kiritilmadi — eng muhim bo'lim */}
           <div className="rounded-xl border border-border bg-background">
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
@@ -326,8 +330,13 @@ const RegistrationReportPage = () => {
             </div>
           </div>
 
-          {/* Ta'lim darajasi taqsimoti */}
-          <div className="rounded-xl border border-border bg-background">
+          {/*
+            O'ng ustun: ta'lim taqsimoti va uning ostida chart.
+            Ikkalasi bitta konteynerda — aks holda chap ustun uzun
+            bo'lganda chart pastga tushib, orada bo'sh joy qolardi.
+          */}
+          <div className="flex flex-col gap-5">
+            <div className="rounded-xl border border-border bg-background">
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
               <BarChart3 className="size-4 text-accent" aria-hidden="true" />
               <h2 className="text-sm font-semibold text-foreground">
@@ -358,36 +367,61 @@ const RegistrationReportPage = () => {
               jinsga qarab O'zbekiston statistikasiga yaqin taqsimot bilan
               belgilanadi. 7–17 yosh har doim "O'rta", 7 yoshgacha
               "Ma'lumoti yo'q".
-            </p>
+              </p>
+            </div>
+
+            {/*
+              So'rov vaqtlari — ta'lim kartasi ostida. Faqat bitta
+              yurish tanlanganda: "Umumiy" da bir nechta MFY
+              aralashib ketadi va chart ma'nosini yo'qotadi.
+            */}
+            {runId && (
+              <div className="rounded-xl border border-border bg-background">
+                <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+                  <Activity className="size-4 text-accent" aria-hidden="true" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Har bir so'rovga ketgan vaqt
+                  </h2>
+                  <span className="ml-auto text-xs text-foreground/50">
+                    sekundlarda
+                  </span>
+                </div>
+
+                <div className="px-4 py-4">
+                  <RegistrationTimingChart
+                    runId={runId}
+                    isRunning={report?.run?.isActive}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/*
-          So'rov vaqtlari — faqat bitta yurish tanlanganda.
-          "Umumiy" da bir nechta MFY aralashib ketadi va chart
-          ma'nosini yo'qotadi.
+          Qo'shimcha ro'yxatlar — kundalik ishda kerak emas, shuning
+          uchun yopiq turadi. Ochilganda uchala kesim ko'rinadi:
+          hujjati yangilanishi kerak bo'lganlar, boshqa joyda
+          ro'yxatda turganlar va ko'chalar kesimi.
         */}
-        {runId && (
-          <div className="mt-5 rounded-xl border border-border bg-background">
-            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              <Activity className="size-4 text-accent" aria-hidden="true" />
-              <h2 className="text-sm font-semibold text-foreground">
-                Har bir so'rovga ketgan vaqt
-              </h2>
-              <span className="ml-auto text-xs text-foreground/50">
-                sekundlarda
-              </span>
-            </div>
+        <button
+          type="button"
+          onClick={() => setShowDetails((value) => !value)}
+          className="mt-5 flex w-full items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-left transition-colors hover:border-accent/40"
+        >
+          <ListFilter className="size-4 text-foreground/60" aria-hidden="true" />
+          <span className="text-sm font-medium text-foreground">Batafsil</span>
+          <span className="text-xs text-foreground/50">
+            hujjat, ko'chish va ko'chalar kesimi
+          </span>
+          <ChevronDown
+            className={`ml-auto size-4 text-foreground/50 transition-transform ${showDetails ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
 
-            <div className="px-4 py-4">
-              <RegistrationTimingChart
-                runId={runId}
-                isRunning={report?.run?.isActive}
-              />
-            </div>
-          </div>
-        )}
-
+        {showDetails && (
+          <>
         {/*
           Hujjati yaroqsizlar — amaliy ro'yxat. Bu odamlar aktiv,
           faqat bazadagi hujjati eskirgan: yangi hujjat ma'lumoti
@@ -528,6 +562,8 @@ const RegistrationReportPage = () => {
               ))}
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>
