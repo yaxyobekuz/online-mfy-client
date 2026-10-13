@@ -4,6 +4,11 @@ import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import logo from "../assets/logo.png";
 import api from "../config/api.js";
+import {
+  getActiveToken,
+  setActiveAccount,
+  upsertAccount,
+} from "../config/accounts.js";
 
 /**
  * Kirish — token orqali.
@@ -20,8 +25,8 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
-  const hasToken = localStorage.getItem("accessToken");
-  if (hasToken) return <Navigate to="/" replace />;
+  // Hisob allaqachon bor — asosiy sahifaga.
+  if (getActiveToken()) return <Navigate to="/" replace />;
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -34,7 +39,16 @@ const LoginPage = () => {
         headers: { Authorization: `Bearer ${accessToken.trim()}` },
       })
       .then((user) => {
-        localStorage.setItem("accessToken", accessToken.trim());
+        // Birinchi hisob ro'yxatga yoziladi va darhol faol
+        // bo'ladi. Keyinchalik chap paneldan boshqa MFY tokeni
+        // qo'shilishi mumkin.
+        upsertAccount({
+          uid: user.uid,
+          username: user.username,
+          token: accessToken.trim(),
+        });
+        setActiveAccount(user.uid);
+
         navigate("/", { state: { user } });
       })
       .catch(() => {
