@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import api, { apiBaseUrl } from "../config/api.js";
+import { getActiveToken } from "../config/accounts.js";
 
 /**
  * Asosiy sahifaning jonli holati.
@@ -15,7 +16,7 @@ import api, { apiBaseUrl } from "../config/api.js";
  * server loglariga tushadi. `fetch` bilan oqimni o'qisak, token
  * odatdagidek `Authorization` header'ida ketadi.
  */
-export const useDashboard = () => {
+export const useDashboard = (accountUid = null) => {
   const [state, setState] = useState({
     user: null,
     mahalla: null,
@@ -34,6 +35,9 @@ export const useDashboard = () => {
   const retryRef = useRef(null);
 
   // Birinchi holat — oqim ulanguncha sahifa bo'sh turmasin.
+  //
+  // `accountUid` o'zgarsa qaytadan so'raladi: boshqa mahallaga
+  // o'tilganda eski ko'rsatkichlar ekranda qolib ketmasligi kerak.
   useEffect(() => {
     let cancelled = false;
 
@@ -52,7 +56,7 @@ export const useDashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [accountUid]);
 
   // Jonli oqim (SSE).
   useEffect(() => {
@@ -67,7 +71,9 @@ export const useDashboard = () => {
       try {
         const response = await fetch(`${apiBaseUrl}/api/dashboard/stream`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            // Token ulanish paytida o'qiladi — hisob almashsa,
+            // qayta ulanishda yangisi ishlatiladi.
+            Authorization: `Bearer ${getActiveToken()}`,
           },
           signal: controller.signal,
         });
@@ -129,7 +135,7 @@ export const useDashboard = () => {
       abortRef.current?.abort();
       if (retryRef.current) clearTimeout(retryRef.current);
     };
-  }, []);
+  }, [accountUid]);
 
   const control = useCallback((action) => {
     setIsBusy(true);

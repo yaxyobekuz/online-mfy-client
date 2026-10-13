@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Loader, Pause, Play } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard.js";
 import KpiCard from "../components/KpiCard.jsx";
@@ -18,7 +19,10 @@ const percentOf = (part, total) =>
   total > 0 ? Math.round((part / total) * 100) : 0;
 
 const DashboardPage = () => {
-  const dashboard = useDashboard();
+  // Qaysi hisob nomidan ishlayapmiz — layout beradi. Hisob
+  // almashsa, hook ma'lumotni qaytadan so'raydi.
+  const { accountUid } = useOutletContext() ?? {};
+  const dashboard = useDashboard(accountUid);
 
   const [memberId, setMemberId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
