@@ -1,66 +1,63 @@
 import { NavLink } from "react-router-dom";
-import {
-  BarChart3,
-  ClipboardCheck,
-  FileSpreadsheet,
-  Home,
-  HousePlus,
-  MapPin,
-  MapPinned,
-  UserPlus,
-  Users,
-} from "lucide-react";
+import { ChartNoAxesColumn, Database, House } from "lucide-react";
+import logo from "../assets/logo.png";
 
+/**
+ * Chap panel — Figma maketidagi "Sidebar" (node 1:4).
+ *
+ * Uch bo'lim: boshqaruv (Asosiy), hisobot (Statistika) va manba
+ * (Umumiy ma'lumotlar ba'zasi). Boshqa sahifa yo'q — ish shu
+ * uchtasidan iborat.
+ */
 const links = [
-  { to: "/", label: "Ko'chalar", icon: MapPin },
-  { to: "/homes", label: "Xonadonlar", icon: Home },
-  { to: "/raw-records", label: "Xom ma'lumot", icon: FileSpreadsheet },
-  { to: "/raw-homes", label: "Xom xonadonlar", icon: HousePlus },
-  { to: "/family-add", label: "Oila a'zolarini kiritish", icon: UserPlus },
-  { to: "/citizens", label: "Umumiy fuqarolar bazasi", icon: Users },
-  { to: "/mahallas", label: "Mahallalar ro'yxati", icon: MapPinned },
-  {
-    to: "/registration",
-    label: "MFY bo'yicha ro'yxatga olish",
-    icon: ClipboardCheck,
-  },
-  {
-    to: "/registration/report",
-    label: "Statistika va hisobotlar",
-    icon: BarChart3,
-  },
+  { to: "/", label: "Asosiy", icon: House },
+  { to: "/statistika", label: "Statistika", icon: ChartNoAxesColumn },
+  { to: "/baza", label: "Umumiy ma'lumotlar ba'zasi", icon: Database },
 ];
 
-const Sidebar = () => {
-  return (
-    <aside className="hidden w-64 shrink-0 border-r border-border bg-background md:block">
-      <div className="flex h-16 items-center px-6">
-        <span className="text-lg font-semibold text-foreground">
-          Onlayn Mahalla
-        </span>
+const Sidebar = ({ mahallaName }) => (
+  <aside className="flex h-svh w-[396px] shrink-0 flex-col py-2 pl-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-3xl bg-panel p-2">
+      <div className="flex w-full items-center gap-4 p-2.5">
+        <div className="size-16 shrink-0">
+          <img
+            src={logo}
+            alt=""
+            className="size-full object-contain"
+            width="64"
+            height="64"
+          />
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-2">
+          <p className="truncate text-xl font-bold text-ink">Onlayn mahalla</p>
+          <p className="truncate text-sm text-muted">
+            {mahallaName ?? "Mahalla tanlanmagan"}
+          </p>
+        </div>
       </div>
 
-      <nav className="flex flex-col gap-1 px-3">
+      <nav className="flex flex-col gap-2.5">
         {links.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             end
             className={({ isActive }) =>
-              `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              `flex w-full items-center gap-4 rounded-xl px-6 py-4 text-base font-medium transition-colors ${
                 isActive
-                  ? "bg-accent text-accent-foreground"
-                  : "text-foreground/70 hover:bg-surface hover:text-foreground"
+                  ? "bg-brand text-white"
+                  : "text-ink hover:bg-black/5"
               }`
             }
           >
-            <Icon className="size-4" aria-hidden="true" />
-            {label}
+            <Icon className="size-6 shrink-0" aria-hidden="true" />
+            <span className="truncate">{label}</span>
           </NavLink>
         ))}
       </nav>
-    </aside>
-  );
-};
+    </div>
+  </aside>
+);
 
 export default Sidebar;

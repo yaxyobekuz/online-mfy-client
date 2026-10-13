@@ -1,25 +1,22 @@
-import api from "../config/api";
-import { Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { useStore } from "../context/useStore.js";
+import { Spinner } from "@heroui/react";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import api from "../config/api";
+import { useStore } from "../context/useStore.js";
 import Sidebar from "../components/Sidebar.jsx";
 
 const MainLayout = () => {
   const navigate = useNavigate();
-  const { set, remove } = useStore();
+  const { set, remove, store } = useStore();
 
   const hasToken = localStorage.getItem("accessToken");
 
-  // State variables for managing form input and submission status
-  //
   // Hook'lar erta `return` dan OLDIN turadi: React ularning har
   // doim bir xil tartibda chaqirilishini talab qiladi. Token
   // yo'qolganda (masalan chiqishda) tartib buzilib, ilova
   // qulashi mumkin edi.
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if the user is already logged in and redirect to the home page if they are
   useEffect(() => {
     // Token bo'lmasa so'rov yubormaymiz — pastda login'ga
     // yo'naltiriladi.
@@ -27,11 +24,22 @@ const MainLayout = () => {
 
     api
       .get("/api/user")
-      .then((user) => set("user", user))
+      .then((user) => {
+        set("user", user);
+
+        // MFY nomi chap panelda har sahifada ko'rinib turishi
+        // kerak, shuning uchun uni sahifalar emas, layout o'qiydi.
+        return api
+          .get("/api/dashboard")
+          .then((data) => set("mahallaName", data.mahalla?.name ?? null))
+          .catch(() => {
+            // MFY hali aniqlanmagan bo'lishi mumkin — bu xato emas.
+          });
+      })
       .catch(() => {
         remove("user");
-        navigate("/login");
         localStorage.removeItem("accessToken");
+        navigate("/login");
       })
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -41,21 +49,18 @@ const MainLayout = () => {
   if (isLoading) return <LoadingContent />;
 
   return (
-    <div className="flex min-h-svh">
-      <Sidebar />
-      <main className="min-w-0 flex-1 bg-surface">
-        <Outlet />
-      </main>
+    <div className="flex h-svh bg-canvas">
+      {/* MFY nomini Asosiy sahifa store'ga yozadi. */}
+      <Sidebar mahallaName={store.mahallaName} />
+      <Outlet />
     </div>
   );
 };
 
-const LoadingContent = () => {
-  return (
-    <main className="flex min-h-svh items-center justify-center bg-background">
-      <Spinner size="lg" color="accent" aria-label="Yuklanmoqda" />
-    </main>
-  );
-};
+const LoadingContent = () => (
+  <main className="flex h-svh items-center justify-center bg-canvas">
+    <Spinner size="lg" color="accent" aria-label="Yuklanmoqda" />
+  </main>
+);
 
 export default MainLayout;
