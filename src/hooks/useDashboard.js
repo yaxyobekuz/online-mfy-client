@@ -31,6 +31,10 @@ export const useDashboard = (accountUid = null) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
 
+  // "Hisoblash" holati: null — hali so'ralmagan.
+  const [scan, setScan] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
+
   const abortRef = useRef(null);
   const retryRef = useRef(null);
 
@@ -172,10 +176,94 @@ export const useDashboard = (accountUid = null) => {
     [],
   );
 
+  // --- "Hisoblash" ---
+  //
+  // Mahallani aniqlash: platformadagi xonadonlar yuklanib, kadastri
+  // bo'yicha fuqarolar bazasi bilan solishtiriladi. Bir martalik
+  // amal, lekin bir necha daqiqa davom etadi (har ko'cha uchun
+  // alohida so'rov + tashqi API limiti), shuning uchun server fonda
+  // bajaradi va holat so'rab turiladi.
+  const scanTimerRef = useRef(null);
+
+  const pollScan = useCallback(() => {
+    api
+      .get("/api/mahalla-scan/status")
+      .then((data) => {
+        setScan(data);
+
+        if (data.status === "running") {
+          scanTimerRef.current = setTimeout(pollScan, 2000);
+          return;
+        }
+
+        setIsScanning(false);
+
+        if (data.status === "done" && data.result) {
+          const { homesMatched, peopleTotal, mahalla } = data.result;
+          toast.success(
+            `${mahalla?.name ?? "Mahalla"} — ${homesMatched} xonadon, ${peopleTotal} fuqaro topildi`,
+          );
+
+          // Panel endi mahallani ko'radi — holatni yangilaymiz.
+          api.get("/api/dashboard").then(setState).catch(() => {});
+        }
+
+        if (data.status === "error") {
+          toast.error(data.error ?? "Hisoblashda xatolik");
+        }
+      })
+      .catch(() => {
+        setIsScanning(false);
+        toast.error("Hisoblash holatini o'qishda xatolik");
+      });
+  }, []);
+
+  const scanMahalla = useCallback(() => {
+    setIsScanning(true);
+
+    return api
+      .post("/api/mahalla-scan")
+      .then((data) => {
+        toast.info(data.message ?? "Hisoblash boshlandi");
+        pollScan();
+        return true;
+      })
+      .catch((err) => {
+        setIsScanning(false);
+        toast.error(err?.message ?? "Hisoblashni boshlashda xatolik");
+        return false;
+      });
+  }, [pollScan]);
+
+  // Sahifa ochilganda hisoblash allaqachon ketayotgan bo'lishi
+  // mumkin (boshqa tabda boshlangan yoki sahifa yangilangan).
+  useEffect(() => {
+    api
+      .get("/api/mahalla-scan/status")
+      .then((data) => {
+        setScan(data);
+
+        if (data.status === "running") {
+          setIsScanning(true);
+          pollScan();
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+    };
+  }, [accountUid, pollScan]);
+
   const run = state.run;
 
   return {
     ...state,
+    scan,
+    isScanning,
+    scanMahalla,
+    // Xonadonlar hali yuklanmagan bo'lsa, "Hisoblash" kerak.
+    needsScan: scan !== null && !scan.homesStored,
     isLoading,
     isConnected,
     isBusy,

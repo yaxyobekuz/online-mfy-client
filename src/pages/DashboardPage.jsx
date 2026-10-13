@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Loader, Pause, Play, Shuffle } from "lucide-react";
+import { Calculator, Loader, Pause, Play, Shuffle } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard.js";
 import KpiCard from "../components/KpiCard.jsx";
 import LiveFeed from "../components/LiveFeed.jsx";
@@ -68,12 +68,33 @@ const DashboardPage = () => {
               </p>
             )}
 
+            {/*
+              "Hisoblash" — MFY xonadonlarini bir martalik aniqlab
+              olish. Faqat kerak bo'lganda ko'rinadi: xonadonlar
+              yuklangandan keyin tugma o'rinsiz bo'ladi.
+            */}
+            {dashboard.needsScan && !dashboard.isRunning && (
+              <button
+                type="button"
+                onClick={dashboard.scanMahalla}
+                disabled={dashboard.isScanning || dashboard.isBusy}
+                className="flex items-center gap-4 rounded-full bg-brand px-6 py-4 text-base font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+              >
+                {dashboard.isScanning ? (
+                  <Loader className="size-6 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Calculator className="size-6" aria-hidden="true" />
+                )}
+                {dashboard.isScanning ? "Hisoblanmoqda..." : "Hisoblash"}
+              </button>
+            )}
+
             {!dashboard.isRunning ? (
               <>
                 <button
                   type="button"
                   onClick={dashboard.start}
-                  disabled={dashboard.isBusy}
+                  disabled={dashboard.isBusy || dashboard.isScanning}
                   className="flex items-center gap-4 rounded-full bg-ok-soft px-6 py-4 text-base font-medium text-ok transition-opacity hover:opacity-80 disabled:opacity-50"
                 >
                   <Play className="size-6" aria-hidden="true" />
@@ -266,9 +287,30 @@ const WaitingBadge = ({ until }) => {
  * ketayotganini ko'rsatmaslik kuzatuvning ma'nosini yo'qotardi.
  */
 const StatusNote = ({ dashboard }) => {
-  const { run, currentHome, stats } = dashboard;
+  const { run, currentHome, stats, scan, isScanning } = dashboard;
 
-  if (!run) return null;
+  // Hisoblash ketayotgan bo'lsa — qaysi ko'chada ekani ko'rinadi.
+  // Jarayon bir necha daqiqa oladi, shuning uchun jim turish
+  // "osilib qoldi" degan taassurot qoldirardi.
+  if (isScanning) {
+    return (
+      <span className="truncate text-brand">
+        {scan?.stage ?? "Hisoblanmoqda..."}
+      </span>
+    );
+  }
+
+  if (scan?.status === "error") {
+    return <span className="text-bad">{scan.error}</span>;
+  }
+
+  if (!run) {
+    return dashboard.needsScan ? (
+      <span className="text-warn">
+        Mahalla hali hisoblanmagan — &ldquo;Hisoblash&rdquo; tugmasini bosing
+      </span>
+    ) : null;
+  }
 
   if (run.isStale) {
     return (
