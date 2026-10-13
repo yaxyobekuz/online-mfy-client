@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Loader, Pause, Play } from "lucide-react";
+import { Loader, Pause, Play, Shuffle } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard.js";
 import KpiCard from "../components/KpiCard.jsx";
 import LiveFeed from "../components/LiveFeed.jsx";
 import MemberDetailsModal from "../components/MemberDetailsModal.jsx";
+import RandomStartModal from "../components/RandomStartModal.jsx";
 
 /**
  * Asosiy sahifa — BOSHQARUV paneli (Figma node 1:2).
@@ -26,6 +27,7 @@ const DashboardPage = () => {
 
   const [memberId, setMemberId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRandomModalOpen, setIsRandomModalOpen] = useState(false);
 
   const stats = dashboard.stats ?? {
     peopleTotal: 0,
@@ -67,15 +69,27 @@ const DashboardPage = () => {
             )}
 
             {!dashboard.isRunning ? (
-              <button
-                type="button"
-                onClick={dashboard.start}
-                disabled={dashboard.isBusy}
-                className="flex items-center gap-4 rounded-full bg-ok-soft px-6 py-4 text-base font-medium text-ok transition-opacity hover:opacity-80 disabled:opacity-50"
-              >
-                <Play className="size-6" aria-hidden="true" />
-                Boshlash
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={dashboard.start}
+                  disabled={dashboard.isBusy}
+                  className="flex items-center gap-4 rounded-full bg-ok-soft px-6 py-4 text-base font-medium text-ok transition-opacity hover:opacity-80 disabled:opacity-50"
+                >
+                  <Play className="size-6" aria-hidden="true" />
+                  Boshlash
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsRandomModalOpen(true)}
+                  disabled={dashboard.isBusy}
+                  className="flex items-center gap-4 rounded-full bg-brand/10 px-6 py-4 text-base font-medium text-brand transition-opacity hover:opacity-80 disabled:opacity-50"
+                >
+                  <Shuffle className="size-6" aria-hidden="true" />
+                  Random
+                </button>
+              </>
             ) : (
               <button
                 type="button"
@@ -98,43 +112,86 @@ const DashboardPage = () => {
         </header>
 
         {/* --- Ko'rsatkichlar --- */}
-        <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
-          <KpiCard label="Jami aholi" value={`${stats.peopleTotal} ta`} />
-          <KpiCard
-            label="Ro'yxatga olingan aholi"
-            value={`${stats.added} ta`}
-            percent={percentOf(stats.added, stats.peopleTotal)}
-            tone="ok"
-          />
-          <KpiCard
-            label="Ro'yxatga olib bo'lmagan aholi"
-            value={`${stats.failed} ta`}
-            percent={percentOf(stats.failed, stats.peopleTotal)}
-            tone="bad"
-          />
-          <KpiCard
-            label="Ro'yxatga olinish kutilmoqda"
-            value={`${stats.pending} ta`}
-            percent={percentOf(stats.pending, stats.peopleTotal)}
-            tone="pending"
-          />
-          <KpiCard label="Jami xonadon" value={`${stats.homesTotal} ta`} />
-        </div>
+        {dashboard.run?.randomMode ? (
+          <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+            <KpiCard
+              label="Maqsad"
+              value={`${dashboard.run.randomTarget ?? 0} ta`}
+            />
+            <KpiCard
+              label="Kiritildi"
+              value={`${dashboard.run.randomAdded ?? 0} ta`}
+              percent={percentOf(
+                dashboard.run.randomAdded ?? 0,
+                dashboard.run.randomTarget ?? 0,
+              )}
+              tone="ok"
+            />
+            <KpiCard
+              label="Xato"
+              value={`${stats.failed} ta`}
+              tone="bad"
+            />
+            <KpiCard
+              label="O'tkazildi"
+              value={`${stats.pending} ta`}
+              tone="pending"
+            />
+            <KpiCard
+              label="Rejim"
+              value="Random"
+            />
+          </div>
+        ) : (
+          <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+            <KpiCard label="Jami aholi" value={`${stats.peopleTotal} ta`} />
+            <KpiCard
+              label="Ro'yxatga olingan aholi"
+              value={`${stats.added} ta`}
+              percent={percentOf(stats.added, stats.peopleTotal)}
+              tone="ok"
+            />
+            <KpiCard
+              label="Ro'yxatga olib bo'lmagan aholi"
+              value={`${stats.failed} ta`}
+              percent={percentOf(stats.failed, stats.peopleTotal)}
+              tone="bad"
+            />
+            <KpiCard
+              label="Ro'yxatga olinish kutilmoqda"
+              value={`${stats.pending} ta`}
+              percent={percentOf(stats.pending, stats.peopleTotal)}
+              tone="pending"
+            />
+            <KpiCard label="Jami xonadon" value={`${stats.homesTotal} ta`} />
+          </div>
+        )}
 
         {/* --- Jarayon chizig'i --- */}
-        <div
-          className="flex h-2 w-full shrink-0 items-center overflow-hidden rounded-full bg-canvas"
-          role="progressbar"
-          aria-valuenow={stats.percent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Xonadonlar bo'yicha jarayon"
-        >
-          <div
-            className="h-full rounded-full bg-brand transition-[width] duration-500"
-            style={{ width: `${stats.percent}%` }}
-          />
-        </div>
+        {(() => {
+          const run = dashboard.run;
+          const randomPercent =
+            run?.randomMode && run.randomTarget > 0
+              ? Math.round(((run.randomAdded ?? 0) / run.randomTarget) * 100)
+              : null;
+          const pct = randomPercent ?? stats.percent;
+
+          return (
+            <div
+              className="flex h-2 w-full shrink-0 items-center overflow-hidden rounded-full bg-canvas"
+              role="progressbar"
+              aria-valuenow={pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={run?.randomMode ? "Random jarayon" : "Xonadonlar bo'yicha jarayon"}
+            >
+              <div
+                className="h-full rounded-full bg-brand transition-[width] duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          );
+        })()}
 
         {/* --- Jonli kuzatuv --- */}
         <LiveFeed
@@ -155,6 +212,17 @@ const DashboardPage = () => {
         memberId={memberId}
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
+      />
+
+      <RandomStartModal
+        isOpen={isRandomModalOpen}
+        onOpenChange={setIsRandomModalOpen}
+        isBusy={dashboard.isBusy}
+        onStart={(target) => {
+          dashboard.randomStart(target).then((ok) => {
+            if (ok) setIsRandomModalOpen(false);
+          });
+        }}
       />
     </div>
   );
@@ -211,6 +279,22 @@ const StatusNote = ({ dashboard }) => {
   }
 
   if (run.error) return <span className="text-bad">{run.error}</span>;
+
+  if (run.randomMode) {
+    if (!run.isActive) {
+      return (
+        <span>
+          Random · to&rsquo;xtatilgan · {run.randomAdded ?? 0}/{run.randomTarget ?? 0}
+        </span>
+      );
+    }
+
+    return (
+      <span className="truncate">
+        Random · {run.randomAdded ?? 0}/{run.randomTarget ?? 0} muvaffaqiyatli
+      </span>
+    );
+  }
 
   if (!run.isActive) {
     return (

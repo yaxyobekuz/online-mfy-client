@@ -153,6 +153,25 @@ export const useDashboard = (accountUid = null) => {
       .finally(() => setIsBusy(false));
   }, []);
 
+  const randomStart = useCallback(
+    (target) => {
+      setIsBusy(true);
+
+      return api
+        .post("/api/dashboard/random-start", { target })
+        .then((data) => {
+          toast.success(data.message ?? "Random rejim boshlandi");
+          return true;
+        })
+        .catch((err) => {
+          toast.error(err?.message ?? "Random rejimni boshlashda xatolik");
+          return false;
+        })
+        .finally(() => setIsBusy(false));
+    },
+    [],
+  );
+
   const run = state.run;
 
   return {
@@ -166,5 +185,6 @@ export const useDashboard = (accountUid = null) => {
     start: () => control("start"),
     pause: () => control("pause"),
     stop: () => control("stop"),
+    randomStart,
   };
 };
