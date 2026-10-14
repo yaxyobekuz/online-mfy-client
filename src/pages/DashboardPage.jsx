@@ -32,6 +32,7 @@ const DashboardPage = () => {
   const stats = dashboard.stats ?? {
     peopleTotal: 0,
     added: 0,
+    exists: 0,
     failed: 0,
     pending: 0,
     homesTotal: 0,
@@ -164,13 +165,25 @@ const DashboardPage = () => {
             />
           </div>
         ) : (
-          <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+          <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
             <KpiCard label="Jami aholi" value={`${stats.peopleTotal} ta`} />
             <KpiCard
               label="Ro'yxatga olingan aholi"
               value={`${stats.added} ta`}
               percent={percentOf(stats.added, stats.peopleTotal)}
               tone="ok"
+            />
+            {/*
+              Platformada AVVALDAN turgan aholi — biz qo'shmaganmiz.
+              Ilgari "ro'yxatga olingan" ichiga qo'shilib ketardi va
+              natija bizning ishimizdan ko'proq ko'rinardi. Endi
+              alohida: "qo'shilgan" faqat biz kiritganlar.
+            */}
+            <KpiCard
+              label="Platformada mavjud aholi"
+              value={`${stats.exists ?? 0} ta`}
+              percent={percentOf(stats.exists ?? 0, stats.peopleTotal)}
+              tone="brand"
             />
             <KpiCard
               label="Ro'yxatga olib bo'lmagan aholi"
