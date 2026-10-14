@@ -27,7 +27,27 @@ import {
  * MFY almashganda jarayon TO'XTAMAYDI: u serverda orqa fonda
  * ketaveradi, bu yerda faqat ko'rinish almashadi. Token O'CHIRILSA
  * esa server shu MFY jarayonlarini to'xtatadi.
+ *
+ * Har MFY ning JONLI holati platforma statistikasidan olinib
+ * ko'rsatiladi: faollik nuqtasi (yashil pulse = ishlayapti) va
+ * progress bar.
  */
+
+// Faollik nuqtasi: yashil (pulse) = faol, qizil = token eskirgan,
+// kulrang = to'xtagan.
+const StatusDot = ({ active, expired }) => (
+  <span className="relative flex size-2.5 shrink-0" aria-hidden="true">
+    {active && (
+      <span className="absolute inline-flex size-full animate-ping rounded-full bg-ok opacity-60" />
+    )}
+    <span
+      className={`relative inline-flex size-2.5 rounded-full ${
+        active ? "bg-ok" : expired ? "bg-bad" : "bg-muted/50"
+      }`}
+    />
+  </span>
+);
+
 const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -35,6 +55,8 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
   const [isBusy, setIsBusy] = useState(false);
   // Muddati o'tgan tokenni yangilash — qaysi uid ochiq.
   const [refreshUid, setRefreshUid] = useState(null);
+  // Har MFY ning JONLI holati (uid -> { active, percent, stage }).
+  const [live, setLive] = useState({});
 
   const boxRef = useRef(null);
 
@@ -52,6 +74,41 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [isOpen]);
+
+  // Jonli progress — platforma statistikasidan. Doim ishlaydi (10s):
+  // yig'ilgan panel sarlavhasida ham faollik ko'rinib tursin, ro'yxat
+  // ochilsa har MFY progress bari real vaqtda yangilanadi.
+  useEffect(() => {
+    let cancelled = false;
+
+    const poll = () => {
+      api
+        .get("/api/platform-stats")
+        .then((data) => {
+          if (cancelled) return;
+          const map = {};
+          for (const m of data.mahallas ?? []) {
+            map[m.uid] = {
+              active: m.active,
+              percent: m.percent,
+              stage: m.stage,
+              added: m.added,
+              homesTotal: m.homesTotal,
+              homesDone: m.homesDone,
+            };
+          }
+          setLive(map);
+        })
+        .catch(() => {});
+    };
+
+    poll();
+    const timer = setInterval(poll, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
 
   const activeUid = active?.uid ?? getActiveMahallaUid();
 
@@ -142,26 +199,54 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
   };
 
   const activeMfy = mahallas.find((m) => m.uid === activeUid) ?? null;
+  const activeLive = activeUid ? live[activeUid] : null;
 
   return (
     <div ref={boxRef} className="relative">
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full items-center gap-4 rounded-2xl p-2.5 text-left transition-colors hover:bg-black/5"
+        className="flex w-full flex-col gap-1.5 rounded-2xl p-2.5 text-left transition-colors hover:bg-black/5"
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="truncate text-xl font-bold text-ink">
-            {mahallaName ?? activeMfy?.mahallaName ?? "Mahalla tanlanmagan"}
-          </p>
-          <p className="truncate text-sm text-muted">
-            {activeMfy?.username ?? "MFY tanlanmagan"}
-          </p>
+        <div className="flex w-full items-center gap-3">
+          {/* Faollik belgisi */}
+          <StatusDot
+            active={activeLive?.active}
+            expired={activeMfy?.status === "expired"}
+          />
+
+          <div className="flex min-w-0 flex-1 flex-col">
+            <p className="truncate text-xl font-bold text-ink">
+              {mahallaName ?? activeMfy?.mahallaName ?? "Mahalla tanlanmagan"}
+            </p>
+            <p className="truncate text-sm text-muted">
+              {activeMfy?.username ?? "MFY tanlanmagan"}
+            </p>
+          </div>
+
+          <ChevronsUpDown
+            className="size-5 shrink-0 text-muted"
+            aria-hidden="true"
+          />
         </div>
 
-        <ChevronsUpDown className="size-5 shrink-0 text-muted" aria-hidden="true" />
+        {/* Faol MFY uchun jonli progress — yig'ilgan holatda ham
+            ishlayotgani ko'rinib tursin. */}
+        {activeLive?.active && activeLive.homesTotal > 0 && (
+          <div className="flex w-full items-center gap-2 pl-1">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-black/10">
+              <div
+                className="h-full rounded-full bg-ok transition-[width] duration-500"
+                style={{ width: `${activeLive.percent}%` }}
+              />
+            </div>
+            <span className="shrink-0 text-xs font-medium text-ok">
+              {activeLive.percent}%
+            </span>
+          </div>
+        )}
       </button>
 
       {isOpen && (
@@ -218,6 +303,10 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
               );
             }
 
+            const mfyLive = live[mfy.uid];
+            const showProgress =
+              mfyLive && mfyLive.homesTotal > 0 && !isExpired;
+
             return (
               <div
                 key={mfy.uid}
@@ -230,54 +319,82 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
                     handleSwitch(mfy);
                   }
                 }}
-                className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+                className={`flex cursor-pointer flex-col gap-1.5 rounded-xl px-3 py-2.5 transition-colors ${
                   isActive ? "bg-brand-soft" : "hover:bg-panel"
-                } ${isExpired ? "opacity-50" : ""}`}
+                } ${isExpired ? "opacity-60" : ""}`}
               >
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <p
-                    className={`truncate text-sm font-medium ${
-                      isActive ? "text-brand" : "text-ink"
-                    }`}
-                  >
-                    {mfy.mahallaName ?? mfy.username ?? "MFY"}
-                  </p>
-                  <p className="truncate text-xs text-muted">
-                    {isExpired ? (
-                      <span className="text-bad">Token muddati o&rsquo;tgan</span>
-                    ) : (
-                      (mfy.username ?? "—")
-                    )}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <StatusDot active={mfyLive?.active} expired={isExpired} />
+
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <p
+                      className={`truncate text-sm font-medium ${
+                        isActive ? "text-brand" : "text-ink"
+                      }`}
+                    >
+                      {mfy.mahallaName ?? mfy.username ?? "MFY"}
+                    </p>
+                    <p className="truncate text-xs text-muted">
+                      {isExpired ? (
+                        <span className="text-bad">
+                          Token muddati o&rsquo;tgan
+                        </span>
+                      ) : mfyLive?.active ? (
+                        <span className="text-ok">Ishlamoqda…</span>
+                      ) : (
+                        (mfy.username ?? "—")
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Muddati o'tgan — yangilash tugmasi */}
+                  {isExpired && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setRefreshUid(mfy.uid);
+                        setToken("");
+                      }}
+                      aria-label={`${mfy.username} tokenini yangilash`}
+                      className="shrink-0 text-warn transition-colors hover:opacity-80"
+                    >
+                      <RefreshCw className="size-4" aria-hidden="true" />
+                    </button>
+                  )}
+
+                  {isActive && !isExpired ? (
+                    <Check
+                      className="size-4 shrink-0 text-brand"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(event) => handleRemove(event, mfy)}
+                      aria-label={`${mfy.username} MFY ni o'chirish`}
+                      className="shrink-0 text-muted transition-colors hover:text-bad"
+                    >
+                      <Trash2 className="size-4" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
 
-                {/* Muddati o'tgan — yangilash tugmasi */}
-                {isExpired && (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setRefreshUid(mfy.uid);
-                      setToken("");
-                    }}
-                    aria-label={`${mfy.username} tokenini yangilash`}
-                    className="shrink-0 text-warn transition-colors hover:opacity-80"
-                  >
-                    <RefreshCw className="size-4" aria-hidden="true" />
-                  </button>
-                )}
-
-                {isActive && !isExpired ? (
-                  <Check className="size-4 shrink-0 text-brand" aria-hidden="true" />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(event) => handleRemove(event, mfy)}
-                    aria-label={`${mfy.username} MFY ni o'chirish`}
-                    className="shrink-0 text-muted transition-colors hover:text-bad"
-                  >
-                    <Trash2 className="size-4" aria-hidden="true" />
-                  </button>
+                {/* Jonli progress bar */}
+                {showProgress && (
+                  <div className="flex items-center gap-2 pl-5.5">
+                    <div className="h-1 flex-1 overflow-hidden rounded-full bg-black/10">
+                      <div
+                        className={`h-full rounded-full transition-[width] duration-500 ${
+                          mfyLive.active ? "bg-ok" : "bg-brand"
+                        }`}
+                        style={{ width: `${mfyLive.percent}%` }}
+                      />
+                    </div>
+                    <span className="shrink-0 text-xs font-medium text-muted">
+                      {mfyLive.percent}%
+                    </span>
+                  </div>
                 )}
               </div>
             );
