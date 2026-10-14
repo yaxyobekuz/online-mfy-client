@@ -31,10 +31,14 @@ const MainLayout = () => {
         const stillExists = list.some((m) => m.uid === current);
 
         if (!stillExists) {
-          const firstActive =
-            list.find((m) => m.status === "active") ?? list[0] ?? null;
-          setActiveMahallaUid(firstActive?.uid ?? null);
-          setActiveUid(firstActive?.uid ?? null);
+          // Yashirilmagan, ishlaydigan MFY ni afzal ko'ramiz.
+          const pick =
+            list.find((m) => !m.hidden && m.status === "active") ??
+            list.find((m) => !m.hidden) ??
+            list[0] ??
+            null;
+          setActiveMahallaUid(pick?.uid ?? null);
+          setActiveUid(pick?.uid ?? null);
         } else {
           setActiveUid(current);
         }

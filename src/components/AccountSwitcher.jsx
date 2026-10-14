@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronsUpDown,
+  Eye,
+  EyeOff,
   LogOut,
   Plus,
   RefreshCw,
@@ -57,6 +59,8 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
   const [refreshUid, setRefreshUid] = useState(null);
   // Har MFY ning JONLI holati (uid -> { active, percent, stage }).
   const [live, setLive] = useState({});
+  // Yashirilgan MFY lar ham ko'rsatilsinmi.
+  const [showHidden, setShowHidden] = useState(false);
 
   const boxRef = useRef(null);
 
@@ -193,6 +197,24 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
       .finally(() => setIsBusy(false));
   };
 
+  // Yashirish / qayta ochish — faqat ko'rinish (serverda saqlanadi).
+  const handleToggleHidden = (event, mfy) => {
+    event.stopPropagation();
+
+    const nextHidden = !mfy.hidden;
+    api
+      .patch(`/api/mfy-tokens/${mfy.uid}/visibility`, { hidden: nextHidden })
+      .then(() => {
+        // Faol MFY yashirilsa — ko'rinadigan boshqasiga o'tamiz.
+        if (nextHidden && mfy.uid === activeUid) {
+          const next = mahallas.find((m) => m.uid !== mfy.uid && !m.hidden);
+          if (next) setActiveMahallaUid(next.uid);
+        }
+        onChanged();
+      })
+      .catch((err) => toast.error(err?.message ?? "Amal bajarilmadi"));
+  };
+
   const handleLogout = () => {
     logout();
     window.location.assign("/login");
@@ -200,6 +222,12 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
 
   const activeMfy = mahallas.find((m) => m.uid === activeUid) ?? null;
   const activeLive = activeUid ? live[activeUid] : null;
+
+  // Yashirilgan MFY lar — soni va ko'rsatiladigan ro'yxat.
+  const hiddenCount = mahallas.filter((m) => m.hidden).length;
+  const visibleMahallas = showHidden
+    ? mahallas
+    : mahallas.filter((m) => !m.hidden || m.uid === activeUid);
 
   return (
     <div ref={boxRef} className="relative">
@@ -252,7 +280,7 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
           role="menu"
           className="absolute inset-x-0 top-full z-20 mt-1 flex flex-col gap-1 rounded-2xl bg-canvas p-2 shadow-lg"
         >
-          {mahallas.map((mfy) => {
+          {visibleMahallas.map((mfy) => {
             const isActive = mfy.uid === activeUid;
             const isExpired = mfy.status === "expired";
 
@@ -319,7 +347,7 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
                 }}
                 className={`flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 transition-colors ${
                   isActive ? "bg-brand-soft" : "hover:bg-panel"
-                } ${isExpired ? "opacity-60" : ""}`}
+                } ${isExpired || mfy.hidden ? "opacity-60" : ""}`}
               >
                 <StatusDot active={mfyLive?.active} expired={isExpired} />
 
@@ -371,6 +399,25 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
                   </button>
                 )}
 
+                {/* Yashirish / qayta ochish */}
+                <button
+                  type="button"
+                  onClick={(event) => handleToggleHidden(event, mfy)}
+                  aria-label={
+                    mfy.hidden
+                      ? `${mfy.username} ni qayta ko'rsatish`
+                      : `${mfy.username} ni yashirish`
+                  }
+                  title={mfy.hidden ? "Qayta ko'rsatish" : "Yashirish"}
+                  className="shrink-0 text-muted transition-colors hover:text-ink"
+                >
+                  {mfy.hidden ? (
+                    <EyeOff className="size-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="size-4" aria-hidden="true" />
+                  )}
+                </button>
+
                 {isActive && !isExpired ? (
                   <Check
                     className="size-4 shrink-0 text-brand"
@@ -389,6 +436,25 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
               </div>
             );
           })}
+
+          {/* Yashirilganlarni ko'rsatish/yopish — faqat yashirin MFY
+              bo'lsa chiqadi. */}
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowHidden((v) => !v)}
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-muted transition-colors hover:bg-panel hover:text-ink"
+            >
+              {showHidden ? (
+                <EyeOff className="size-3.5 shrink-0" aria-hidden="true" />
+              ) : (
+                <Eye className="size-3.5 shrink-0" aria-hidden="true" />
+              )}
+              {showHidden
+                ? "Yashirilganlarni yopish"
+                : `Yashirilganlar (${hiddenCount})`}
+            </button>
+          )}
 
           {isAdding ? (
             <form onSubmit={handleAdd} className="flex flex-col gap-2 p-1">
