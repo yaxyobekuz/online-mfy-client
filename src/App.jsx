@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import StatisticsPage from "./pages/StatisticsPage.jsx";
 import DatabasePage from "./pages/DatabasePage.jsx";
+import HomeMembersPage from "./pages/HomeMembersPage.jsx";
 import MainLayout from "./layouts/MainLayout.jsx";
 import { StoreProvider } from "./context/StoreContext.jsx";
 
@@ -18,6 +19,7 @@ const App = () => {
           <Route index element={<DashboardPage />} />
           <Route path="/statistika" element={<StatisticsPage />} />
           <Route path="/baza" element={<DatabasePage />} />
+          <Route path="/xonadonlar" element={<HomeMembersPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
