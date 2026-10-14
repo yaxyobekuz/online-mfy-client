@@ -238,13 +238,9 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        {/* Faollik belgisi */}
-        <StatusDot
-          active={activeLive?.active}
-          expired={activeMfy?.status === "expired"}
-        />
-
-        {/* Nom — qalin, lekin qisqa; qolgan joyni progress egallaydi */}
+        {/* Nom — qalin, lekin qisqa; qolgan joyni progress egallaydi.
+            Faollik nuqtasi sarlavhada ko'rsatilmaydi: progress bar
+            allaqachon ishlayotganini bildiradi. */}
         <p className="max-w-[45%] shrink-0 truncate text-xl font-bold text-ink">
           {mahallaName ?? activeMfy?.mahallaName ?? "Mahalla tanlanmagan"}
         </p>

@@ -150,7 +150,7 @@ const StatisticsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-svh min-w-0 flex-1 items-center justify-center py-2 pr-2">
+      <div className="flex h-svh min-w-0 flex-1 items-center justify-center py-2 pr-2 pl-2">
         <Spinner size="lg" color="accent" aria-label="Yuklanmoqda" />
       </div>
     );
@@ -158,7 +158,7 @@ const StatisticsPage = () => {
 
   if (!totals || totals.attempts === 0) {
     return (
-      <div className="flex h-svh min-w-0 flex-1 flex-col py-2 pr-2">
+      <div className="flex h-svh min-w-0 flex-1 flex-col py-2 pr-2 pl-2">
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-3xl bg-panel px-6 py-2">
           <p className="text-sm text-muted">
             Hozircha platforma bo&rsquo;yicha hisobot yo&rsquo;q.
@@ -184,7 +184,7 @@ const StatisticsPage = () => {
   const overallPercent = pct(resolved, totals.attempts);
 
   return (
-    <div className="flex h-svh min-w-0 flex-1 flex-col py-2 pr-2">
+    <div className="flex h-svh min-w-0 flex-1 flex-col py-2 pr-2 pl-2">
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl bg-panel px-5 py-3">
         {/* --- Sarlavha --- */}
         <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 py-1">
