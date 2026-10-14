@@ -4,7 +4,7 @@ import { Download, Loader, Search, Square, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 import api, { apiBaseUrl } from "../config/api";
-import { getActiveToken } from "../config/accounts.js";
+import { getSession, getActiveMahallaUid } from "../config/accounts.js";
 
 /**
  * MFY xonadon a'zolari — platformadan to'liq yuklab olinadi.
@@ -154,7 +154,10 @@ const HomeMembersPage = () => {
     setIsExporting(true);
     try {
       const response = await fetch(`${apiBaseUrl}/api/home-members/export`, {
-        headers: { Authorization: `Bearer ${getActiveToken()}` },
+        headers: {
+          Authorization: `Bearer ${getSession()}`,
+          "X-Mahalla-Uid": getActiveMahallaUid() ?? "",
+        },
       });
       if (!response.ok) throw new Error("export failed");
 

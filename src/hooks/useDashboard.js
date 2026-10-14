@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import api, { apiBaseUrl } from "../config/api.js";
-import { getActiveToken } from "../config/accounts.js";
+import { getSession, getActiveMahallaUid } from "../config/accounts.js";
 
 /**
  * Asosiy sahifaning jonli holati.
@@ -75,9 +75,10 @@ export const useDashboard = (accountUid = null) => {
       try {
         const response = await fetch(`${apiBaseUrl}/api/dashboard/stream`, {
           headers: {
-            // Token ulanish paytida o'qiladi — hisob almashsa,
-            // qayta ulanishda yangisi ishlatiladi.
-            Authorization: `Bearer ${getActiveToken()}`,
+            // Sessiya va MFY ulanish paytida o'qiladi — MFY
+            // almashsa, qayta ulanishda yangisi ishlatiladi.
+            Authorization: `Bearer ${getSession()}`,
+            "X-Mahalla-Uid": getActiveMahallaUid() ?? "",
           },
           signal: controller.signal,
         });
