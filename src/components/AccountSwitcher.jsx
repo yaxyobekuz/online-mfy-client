@@ -1,31 +1,43 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronsUpDown, LogOut, Plus, Trash2, X } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  LogOut,
+  Plus,
+  RefreshCw,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import api from "../config/api.js";
 import {
-  clearAccounts,
-  removeAccount,
-  setActiveAccount,
-  upsertAccount,
+  getActiveMahallaUid,
+  setActiveMahallaUid,
+  logout,
 } from "../config/accounts.js";
 
 /**
- * Hisoblar almashtirgichi — chap panelning tepasida.
+ * MFY almashtirgich — chap panel tepasida.
  *
- * Har token bitta MFY ga tegishli, shuning uchun "boshqa mahallaga
- * o'tish" = "boshqa hisobni tanlash". O'tish paytida oldingi
- * mahallaning jarayoni TO'XTAMAYDI: u serverda orqa fonda
- * ketaveradi, bu yerda faqat ko'rinish almashadi.
+ * MFY tokenlari SERVERda. Bu komponent ularni `/api/mfy-tokens` dan
+ * oladi, qo'shadi / yangilaydi / o'chiradi. Muddati o'tgan
+ * ("expired") MFY lar so'nik (disabled) ko'rinadi va ularda
+ * "yangilash" tugmasi bo'ladi.
+ *
+ * MFY almashganda jarayon TO'XTAMAYDI: u serverda orqa fonda
+ * ketaveradi, bu yerda faqat ko'rinish almashadi. Token O'CHIRILSA
+ * esa server shu MFY jarayonlarini to'xtatadi.
  */
-const AccountSwitcher = ({ active, accounts, onChanged, mahallaName }) => {
+const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [token, setToken] = useState("");
-  const [isChecking, setIsChecking] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+  // Muddati o'tgan tokenni yangilash — qaysi uid ochiq.
+  const [refreshUid, setRefreshUid] = useState(null);
 
   const boxRef = useRef(null);
 
-  // Tashqariga bosilganda yopiladi.
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -33,6 +45,7 @@ const AccountSwitcher = ({ active, accounts, onChanged, mahallaName }) => {
       if (!boxRef.current?.contains(event.target)) {
         setIsOpen(false);
         setIsAdding(false);
+        setRefreshUid(null);
       }
     };
 
@@ -40,85 +53,95 @@ const AccountSwitcher = ({ active, accounts, onChanged, mahallaName }) => {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [isOpen]);
 
-  /**
-   * Yangi hisob qo'shish.
-   *
-   * Token darhol tekshiriladi: yaroqsiz token ro'yxatga tushsa,
-   * foydalanuvchi keyinroq "nega ishlamayapti" deb boshi qotardi.
-   *
-   * Sarlavha ataylab aniq beriladi — interceptor bunday holatda
-   * faol hisob tokenini qo'ymaydi, ya'ni tekshiruv aynan YANGI
-   * token bilan ketadi.
-   */
+  const activeUid = active?.uid ?? getActiveMahallaUid();
+
+  // Yangi MFY qo'shish.
   const handleAdd = (event) => {
     event.preventDefault();
-
     const value = token.trim();
     if (!value) return;
 
-    setIsChecking(true);
-
+    setIsBusy(true);
     api
-      .get("/api/user", { headers: { Authorization: `Bearer ${value}` } })
-      .then((user) => {
-        const exists = accounts.some((account) => account.uid === user.uid);
-
-        upsertAccount({
-          uid: user.uid,
-          username: user.username,
-          token: value,
-        });
-
-        // Yangi qo'shilgan hisob darhol faol bo'ladi — odam uni
-        // qo'shdi, demak o'shanda ishlamoqchi.
-        setActiveAccount(user.uid);
-
-        toast.success(
-          exists
-            ? `"${user.username}" hisobi yangilandi`
-            : `"${user.username}" hisobi qo'shildi`,
-        );
-
+      .post("/api/mfy-tokens", { token: value })
+      .then((mfy) => {
+        toast.success(`"${mfy.username}" MFY qo'shildi`);
+        setActiveMahallaUid(mfy.uid);
         setToken("");
         setIsAdding(false);
         setIsOpen(false);
         onChanged();
       })
-      .catch(() => {
-        toast.error("Token yaroqsiz yoki foydalanuvchi topilmadi");
+      .catch((err) => toast.error(err?.message ?? "Token yaroqsiz"))
+      .finally(() => setIsBusy(false));
+  };
+
+  // Muddati o'tgan tokenni yangilash.
+  const handleRefresh = (event, uid) => {
+    event.preventDefault();
+    const value = token.trim();
+    if (!value) return;
+
+    setIsBusy(true);
+    api
+      .put(`/api/mfy-tokens/${uid}`, { token: value })
+      .then((mfy) => {
+        toast.success(`"${mfy.username}" tokeni yangilandi`);
+        setToken("");
+        setRefreshUid(null);
+        onChanged();
       })
-      .finally(() => setIsChecking(false));
+      .catch((err) => toast.error(err?.message ?? "Yangilashda xatolik"))
+      .finally(() => setIsBusy(false));
   };
 
-  const handleSwitch = (uid) => {
-    if (uid === active?.uid) {
-      setIsOpen(false);
+  const handleSwitch = (mfy) => {
+    // Muddati o'tgan MFY ga o'tib bo'lmaydi — avval yangilash kerak.
+    if (mfy.status === "expired") {
+      setRefreshUid(mfy.uid);
+      setToken("");
       return;
     }
 
-    setActiveAccount(uid);
+    if (mfy.uid !== activeUid) {
+      setActiveMahallaUid(mfy.uid);
+      onChanged();
+    }
     setIsOpen(false);
-    onChanged();
   };
 
-  const handleRemove = (event, account) => {
-    // Qator bosilishi (hisobga o'tish) bilan chalkashmasin.
+  const handleRemove = (event, mfy) => {
     event.stopPropagation();
-
-    if (!window.confirm(`"${account.username}" hisobi olib tashlansinmi?`)) {
+    if (
+      !window.confirm(
+        `"${mfy.username}" MFY o'chirilsinmi? Uning barcha jarayonlari to'xtaydi.`,
+      )
+    ) {
       return;
     }
 
-    const left = removeAccount(account.uid);
-    onChanged();
-
-    if (!left.length) window.location.assign("/login");
+    setIsBusy(true);
+    api
+      .delete(`/api/mfy-tokens/${mfy.uid}`)
+      .then(() => {
+        toast.success("MFY o'chirildi");
+        // Faol MFY o'chirilsa — boshqasiga o'tamiz.
+        if (mfy.uid === activeUid) {
+          const next = mahallas.find((m) => m.uid !== mfy.uid);
+          setActiveMahallaUid(next?.uid ?? null);
+        }
+        onChanged();
+      })
+      .catch((err) => toast.error(err?.message ?? "O'chirishda xatolik"))
+      .finally(() => setIsBusy(false));
   };
 
   const handleLogout = () => {
-    clearAccounts();
+    logout();
     window.location.assign("/login");
   };
+
+  const activeMfy = mahallas.find((m) => m.uid === activeUid) ?? null;
 
   return (
     <div ref={boxRef} className="relative">
@@ -131,10 +154,10 @@ const AccountSwitcher = ({ active, accounts, onChanged, mahallaName }) => {
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="truncate text-xl font-bold text-ink">
-            {mahallaName ?? "Mahalla tanlanmagan"}
+            {mahallaName ?? activeMfy?.mahallaName ?? "Mahalla tanlanmagan"}
           </p>
           <p className="truncate text-sm text-muted">
-            {active?.username ?? "Hisob tanlanmagan"}
+            {activeMfy?.username ?? "MFY tanlanmagan"}
           </p>
         </div>
 
@@ -146,24 +169,70 @@ const AccountSwitcher = ({ active, accounts, onChanged, mahallaName }) => {
           role="menu"
           className="absolute inset-x-0 top-full z-20 mt-1 flex flex-col gap-1 rounded-2xl bg-canvas p-2 shadow-lg"
         >
-          {accounts.map((account) => {
-            const isActive = account.uid === active?.uid;
+          {mahallas.map((mfy) => {
+            const isActive = mfy.uid === activeUid;
+            const isExpired = mfy.status === "expired";
+
+            // Shu MFY uchun yangilash formasi ochiq.
+            if (refreshUid === mfy.uid) {
+              return (
+                <form
+                  key={mfy.uid}
+                  onSubmit={(event) => handleRefresh(event, mfy.uid)}
+                  className="flex flex-col gap-2 rounded-xl bg-panel p-2"
+                >
+                  <p className="px-1 text-xs text-muted">
+                    &ldquo;{mfy.username}&rdquo; uchun yangi token
+                  </p>
+                  <input
+                    autoFocus
+                    type="password"
+                    value={token}
+                    placeholder="Yangi token"
+                    aria-label="Yangi token"
+                    autoComplete="off"
+                    onChange={(event) => setToken(event.target.value)}
+                    className="w-full rounded-xl bg-canvas px-3 py-2.5 text-sm text-ink outline-none placeholder:text-muted"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={isBusy || !token.trim()}
+                      className="flex-1 rounded-xl bg-brand px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                    >
+                      {isBusy ? "..." : "Yangilash"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRefreshUid(null);
+                        setToken("");
+                      }}
+                      aria-label="Bekor qilish"
+                      className="rounded-xl bg-canvas px-3 py-2 text-muted transition-colors hover:text-ink"
+                    >
+                      <X className="size-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                </form>
+              );
+            }
 
             return (
               <div
-                key={account.uid ?? "legacy"}
+                key={mfy.uid}
                 role="menuitem"
                 tabIndex={0}
-                onClick={() => handleSwitch(account.uid)}
+                onClick={() => handleSwitch(mfy)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    handleSwitch(account.uid);
+                    handleSwitch(mfy);
                   }
                 }}
                 className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
                   isActive ? "bg-brand-soft" : "hover:bg-panel"
-                }`}
+                } ${isExpired ? "opacity-50" : ""}`}
               >
                 <div className="flex min-w-0 flex-1 flex-col">
                   <p
@@ -171,20 +240,40 @@ const AccountSwitcher = ({ active, accounts, onChanged, mahallaName }) => {
                       isActive ? "text-brand" : "text-ink"
                     }`}
                   >
-                    {account.mahallaName ?? "MFY aniqlanmagan"}
+                    {mfy.mahallaName ?? mfy.username ?? "MFY"}
                   </p>
                   <p className="truncate text-xs text-muted">
-                    {account.username ?? "—"}
+                    {isExpired ? (
+                      <span className="text-bad">Token muddati o&rsquo;tgan</span>
+                    ) : (
+                      (mfy.username ?? "—")
+                    )}
                   </p>
                 </div>
 
-                {isActive ? (
+                {/* Muddati o'tgan — yangilash tugmasi */}
+                {isExpired && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setRefreshUid(mfy.uid);
+                      setToken("");
+                    }}
+                    aria-label={`${mfy.username} tokenini yangilash`}
+                    className="shrink-0 text-warn transition-colors hover:opacity-80"
+                  >
+                    <RefreshCw className="size-4" aria-hidden="true" />
+                  </button>
+                )}
+
+                {isActive && !isExpired ? (
                   <Check className="size-4 shrink-0 text-brand" aria-hidden="true" />
                 ) : (
                   <button
                     type="button"
-                    onClick={(event) => handleRemove(event, account)}
-                    aria-label={`${account.username} hisobini olib tashlash`}
+                    onClick={(event) => handleRemove(event, mfy)}
+                    aria-label={`${mfy.username} MFY ni o'chirish`}
                     className="shrink-0 text-muted transition-colors hover:text-bad"
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
@@ -200,22 +289,20 @@ const AccountSwitcher = ({ active, accounts, onChanged, mahallaName }) => {
                 autoFocus
                 type="password"
                 value={token}
-                placeholder="Boshqa MFY tokeni"
+                placeholder="MFY tokeni"
                 aria-label="Token"
                 autoComplete="off"
                 onChange={(event) => setToken(event.target.value)}
                 className="w-full rounded-xl bg-panel px-3 py-2.5 text-sm text-ink outline-none placeholder:text-muted"
               />
-
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  disabled={isChecking || !token.trim()}
+                  disabled={isBusy || !token.trim()}
                   className="flex-1 rounded-xl bg-brand px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
-                  {isChecking ? "Tekshirilmoqda..." : "Qo'shish"}
+                  {isBusy ? "Tekshirilmoqda..." : "Qo'shish"}
                 </button>
-
                 <button
                   type="button"
                   onClick={() => {
@@ -236,7 +323,7 @@ const AccountSwitcher = ({ active, accounts, onChanged, mahallaName }) => {
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-brand transition-colors hover:bg-panel"
             >
               <Plus className="size-4 shrink-0" aria-hidden="true" />
-              Hisob qo&rsquo;shish
+              MFY qo&rsquo;shish
             </button>
           )}
 

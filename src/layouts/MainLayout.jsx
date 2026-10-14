@@ -3,106 +3,116 @@ import { Spinner } from "@heroui/react";
 import { Navigate, Outlet } from "react-router-dom";
 import api from "../config/api";
 import {
-  clearAccounts,
-  getAccounts,
-  getActiveAccount,
-  setAccountMahalla,
-  upsertAccount,
+  isLoggedIn,
+  getActiveMahallaUid,
+  setActiveMahallaUid,
 } from "../config/accounts.js";
 import Sidebar from "../components/Sidebar.jsx";
 
 const MainLayout = () => {
-  // Hisoblar ro'yxati va faol hisob — butun ilovaning "kim
-  // nomidan ishlayapmiz" savoliga javobi.
-  const [accounts, setAccounts] = useState(() => getAccounts());
-  const [active, setActive] = useState(() => getActiveAccount());
+  // MFY ro'yxati SERVERdan olinadi; faol MFY uid brauzerda.
+  const [mahallas, setMahallas] = useState(null); // null — hali yuklanmagan
+  const [activeUid, setActiveUid] = useState(() => getActiveMahallaUid());
+  const [mahallaName, setMahallaName] = useState(null);
+  const [nameLoadedFor, setNameLoadedFor] = useState(null);
 
-  // Yuklangan ma'lumot qaysi hisobga tegishli ekani kalit bilan
-  // saqlanadi: shunda "yuklanyaptimi" savoli state'ning o'zidan
-  // ko'rinadi va effect boshida setState chaqirish kerak
-  // bo'lmaydi (React buni tavsiya qilmaydi).
-  const [loaded, setLoaded] = useState({ uid: null, mahallaName: null });
+  const loggedIn = isLoggedIn();
 
-  const hasAccount = Boolean(active?.token);
-  const activeUid = active?.uid ?? null;
+  // MFY ro'yxatini serverdan o'qiymiz.
+  const refreshMahallas = useCallback(() => {
+    return api
+      .get("/api/mfy-tokens")
+      .then((list) => {
+        setMahallas(list);
 
-  // Hisob almashganda ro'yxatni ham, faolni ham qayta o'qiymiz.
-  const refreshAccounts = useCallback(() => {
-    setAccounts(getAccounts());
-    setActive(getActiveAccount());
+        // Faol MFY tanlanmagan yoki o'chirilgan bo'lsa — birinchi
+        // aktivni tanlaymiz.
+        const current = getActiveMahallaUid();
+        const stillExists = list.some((m) => m.uid === current);
+
+        if (!stillExists) {
+          const firstActive =
+            list.find((m) => m.status === "active") ?? list[0] ?? null;
+          setActiveMahallaUid(firstActive?.uid ?? null);
+          setActiveUid(firstActive?.uid ?? null);
+        } else {
+          setActiveUid(current);
+        }
+      })
+      .catch(() => setMahallas([]));
   }, []);
 
   useEffect(() => {
-    if (!hasAccount) return undefined;
+    if (loggedIn) refreshMahallas();
+  }, [loggedIn, refreshMahallas]);
 
+  // Faol MFY nomini (chap panelda ko'rsatish uchun) dashboard'dan
+  // o'qiymiz. MFY almashsa qayta so'raladi.
+  useEffect(() => {
     let cancelled = false;
 
-    api
-      .get("/api/user")
-      .then((user) => {
-        // Hisob eski (`uid` siz) yozuvdan kelgan bo'lishi mumkin —
-        // serverdan kelgan ma'lumot bilan to'ldiramiz.
-        if (!activeUid && user?.uid) {
-          upsertAccount({
-            uid: user.uid,
-            username: user.username,
-            token: active.token,
-          });
-          if (!cancelled) refreshAccounts();
+    // MFY tanlanmagan — nom yo'q. setState'ni effekt tanasida
+    // to'g'ridan-to'g'ri emas, mikrovazifada chaqiramiz (cascading
+    // render ogohlantirishi bo'lmasin).
+    if (!activeUid) {
+      Promise.resolve().then(() => {
+        if (!cancelled) {
+          setMahallaName(null);
+          setNameLoadedFor(null);
         }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
 
-        // MFY nomi chap panelda har sahifada ko'rinib turishi
-        // kerak, shuning uchun uni sahifalar emas, layout o'qiydi.
-        return api
-          .get("/api/dashboard")
-          .then((data) => {
-            const name = data.mahalla?.name ?? null;
-            const uid = user?.uid ?? activeUid;
-
-            // Nomni hisobga yozib qo'yamiz: hisoblar ro'yxatida
-            // qaysi biri qaysi mahalla ekani ko'rinib tursin.
-            if (uid) setAccountMahalla(uid, name);
-
-            if (!cancelled) {
-              setLoaded({ uid: activeUid, mahallaName: name });
-              refreshAccounts();
-            }
-          })
-          .catch(() => {
-            // MFY hali aniqlanmagan bo'lishi mumkin — bu xato emas.
-            if (!cancelled) setLoaded({ uid: activeUid, mahallaName: null });
-          });
+    api
+      .get("/api/dashboard")
+      .then((data) => {
+        if (!cancelled) {
+          setMahallaName(data.mahalla?.name ?? null);
+          setNameLoadedFor(activeUid);
+        }
       })
       .catch(() => {
-        // Token yaroqsiz — hisoblarni tozalab, kirish sahifasiga.
-        clearAccounts();
-        if (!cancelled) refreshAccounts();
+        if (!cancelled) {
+          setMahallaName(null);
+          setNameLoadedFor(activeUid);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [hasAccount, activeUid, active?.token, refreshAccounts]);
+  }, [activeUid]);
 
-  if (!hasAccount) return <Navigate to="/login" replace />;
+  if (!loggedIn) return <Navigate to="/login" replace />;
 
-  const isLoading = loaded.uid !== activeUid;
-  if (isLoading) return <LoadingContent />;
+  // MFY ro'yxati hali yuklanmagan.
+  if (mahallas === null) return <LoadingContent />;
+
+  // Birorta MFY yo'q — ro'yxatni ochib qo'shishni kutamiz, lekin
+  // sahifa baribir ko'rinadi (bo'sh holat).
+  const active = mahallas.find((m) => m.uid === activeUid) ?? null;
+
+  // MFY bor, lekin nomi hali yuklanmagan.
+  const isNameLoading = activeUid && nameLoadedFor !== activeUid;
+  if (isNameLoading) return <LoadingContent />;
 
   return (
     <div className="flex h-svh bg-canvas">
       <Sidebar
-        mahallaName={loaded.mahallaName}
+        mahallaName={mahallaName}
         active={active}
-        accounts={accounts}
-        onAccountChanged={refreshAccounts}
+        mahallas={mahallas}
+        onAccountChanged={refreshMahallas}
       />
       {/*
-        `key` — hisob almashganda sahifa butunlay qaytadan
-        quriladi. Aks holda eski mahallaning ko'rsatkichlari
-        yangisi kelguncha ekranda qolib turardi.
+        `key` — MFY almashganda sahifa butunlay qaytadan quriladi.
+        Aks holda eski mahallaning ko'rsatkichlari yangisi kelguncha
+        ekranda qolib turardi.
       */}
-      <Outlet key={activeUid ?? "default"} context={{ accountUid: activeUid }} />
+      <Outlet key={activeUid ?? "none"} context={{ accountUid: activeUid }} />
     </div>
   );
 };

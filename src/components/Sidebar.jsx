@@ -17,7 +17,7 @@ const links = [
   { to: "/xonadonlar", label: "MFY xonadon a'zolari", icon: Users },
 ];
 
-const Sidebar = ({ mahallaName, active, accounts, onAccountChanged }) => (
+const Sidebar = ({ mahallaName, active, mahallas, onAccountChanged }) => (
   <aside className="flex h-svh w-[396px] shrink-0 flex-col py-2 pl-2">
     <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-3xl bg-panel p-2">
       <div className="flex w-full items-center gap-2">
@@ -39,7 +39,7 @@ const Sidebar = ({ mahallaName, active, accounts, onAccountChanged }) => (
         <div className="min-w-0 flex-1">
           <AccountSwitcher
             active={active}
-            accounts={accounts}
+            mahallas={mahallas}
             onChanged={onAccountChanged}
             mahallaName={mahallaName}
           />
