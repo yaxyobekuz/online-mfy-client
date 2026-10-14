@@ -33,6 +33,7 @@ const DashboardPage = () => {
     peopleTotal: 0,
     added: 0,
     exists: 0,
+    movedAway: 0,
     failed: 0,
     pending: 0,
     homesTotal: 0,
@@ -165,7 +166,7 @@ const DashboardPage = () => {
             />
           </div>
         ) : (
-          <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
+          <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-7">
             <KpiCard label="Jami aholi" value={`${stats.peopleTotal} ta`} />
             <KpiCard
               label="Ro'yxatga olingan aholi"
@@ -184,6 +185,18 @@ const DashboardPage = () => {
               value={`${stats.exists ?? 0} ta`}
               percent={percentOf(stats.exists ?? 0, stats.peopleTotal)}
               tone="brand"
+            />
+            {/*
+              Boshqa MFY da ro'yxatda turgani uchun kirita
+              olmaganlar — odam ko'chib ketgan. Bu xato emas, shuning
+              uchun "rad etilgan" dan ajratildi: mahalla xodimi
+              "qancha odam boshqa joyda yashaydi" ni ko'rib tursin.
+            */}
+            <KpiCard
+              label="Boshqa MFY da mavjud"
+              value={`${stats.movedAway ?? 0} ta`}
+              percent={percentOf(stats.movedAway ?? 0, stats.peopleTotal)}
+              tone="warn"
             />
             <KpiCard
               label="Ro'yxatga olib bo'lmagan aholi"

@@ -11,6 +11,7 @@ const KpiCard = ({ label, value, percent, tone = "ink" }) => {
     bad: "text-bad",
     pending: "text-pending",
     brand: "text-brand",
+    warn: "text-warn",
   }[tone];
 
   return (
