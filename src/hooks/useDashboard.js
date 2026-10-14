@@ -31,6 +31,14 @@ export const useDashboard = (accountUid = null) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
 
+  // Optimistik holat: tugma bosilganda tugmani DARHOL almashtiramiz,
+  // server tasdig'ini kutmaymiz. Aks holda jarayon to'xtaguncha
+  // (bir necha soniya) tugma eski holatda qolib, foydalanuvchi uni
+  // qayta-qayta bosardi. null — optimistik holat yo'q, SSE'dagi
+  // haqiqiy holat ko'rsatiladi.
+  const [optimisticRunning, setOptimisticRunning] = useState(null);
+  const optimisticTimerRef = useRef(null);
+
   // "Hisoblash" holati: null — hali so'ralmagan.
   const [scan, setScan] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -145,6 +153,18 @@ export const useDashboard = (accountUid = null) => {
   const control = useCallback((action) => {
     setIsBusy(true);
 
+    // Tugmani darhol almashtiramiz (optimistik). "start" -> ishlamoqda,
+    // "pause"/"stop" -> to'xtagan. Haqiqiy holat SSE orqali kelgach,
+    // yoki 12 soniyadan keyin, optimistik holat bekor qilinadi.
+    if (action === "start") setOptimisticRunning(true);
+    else setOptimisticRunning(false);
+
+    if (optimisticTimerRef.current) clearTimeout(optimisticTimerRef.current);
+    optimisticTimerRef.current = setTimeout(
+      () => setOptimisticRunning(null),
+      12000,
+    );
+
     return api
       .post("/api/dashboard/control", { action })
       .then((data) => {
@@ -152,6 +172,8 @@ export const useDashboard = (accountUid = null) => {
         return true;
       })
       .catch((err) => {
+        // Xato bo'lsa optimistik holatni darhol bekor qilamiz.
+        setOptimisticRunning(null);
         toast.error(err?.message ?? "Amalni bajarishda xatolik yuz berdi");
         return false;
       })
@@ -258,6 +280,24 @@ export const useDashboard = (accountUid = null) => {
 
   const run = state.run;
 
+  // Komponent yopilganda taymerni tozalaymiz.
+  useEffect(
+    () => () => {
+      if (optimisticTimerRef.current) clearTimeout(optimisticTimerRef.current);
+    },
+    [],
+  );
+
+  const realRunning = Boolean(run?.isActive);
+
+  // Optimistik holat haqiqiyга yetib kelgan bo'lsa — uni e'tiborsiz
+  // qoldiramiz (effektda setState chaqirmaslik uchun hisoblab
+  // olamiz). Taymer baribir 12s dan keyin uni tozalaydi.
+  const effectiveRunning =
+    optimisticRunning !== null && optimisticRunning !== realRunning
+      ? optimisticRunning
+      : realRunning;
+
   return {
     ...state,
     scan,
@@ -270,7 +310,9 @@ export const useDashboard = (accountUid = null) => {
     isBusy,
     // Jarayon haqiqatan ketyaptimi: "running" deb turgan, lekin
     // ishchisi yo'q yurish ham bor (server qayta ishga tushganda).
-    isRunning: Boolean(run?.isActive),
+    // Optimistik holat bo'lsa — o'sha ko'rsatiladi (tugma darhol
+    // almashsin).
+    isRunning: effectiveRunning,
     start: () => control("start"),
     pause: () => control("pause"),
     stop: () => control("stop"),
