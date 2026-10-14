@@ -4,55 +4,39 @@ import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import logo from "../assets/logo.png";
 import api from "../config/api.js";
-import {
-  getActiveToken,
-  setActiveAccount,
-  upsertAccount,
-} from "../config/accounts.js";
+import { isLoggedIn, setSession } from "../config/accounts.js";
 
 /**
- * Kirish — token orqali.
+ * Kirish — SERVER paroli orqali.
  *
- * Token qaysi MFY ga tegishli bo'lsa, butun ish o'sha mahalla
- * ustida ketadi: alohida mahalla tanlash yo'q.
+ * MFY tokenlari endi serverda; bu yerda faqat serverga kirish
+ * (bitta parol) amalga oshadi. Muvaffaqiyatli bo'lsa sessiya
+ * saqlanadi va asosiy sahifaga o'tiladi, u yerda MFY tanlanadi.
  */
 const LoginPage = () => {
   const navigate = useNavigate();
 
-  // Hook'lar har doim BIR XIL tartibda chaqirilishi shart — shuning
-  // uchun ular erta `return` dan oldin turadi.
-  const [accessToken, setAccessToken] = useState("");
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Hisob allaqachon bor — asosiy sahifaga.
-  if (getActiveToken()) return <Navigate to="/" replace />;
+  // Allaqachon kirgan — asosiy sahifaga.
+  if (isLoggedIn()) return <Navigate to="/" replace />;
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!accessToken.trim()) return;
+    if (!password.trim()) return;
 
     setIsSubmitting(true);
 
     api
-      .get("/api/user", {
-        headers: { Authorization: `Bearer ${accessToken.trim()}` },
+      .post("/api/auth/login", { password: password.trim() })
+      .then((data) => {
+        setSession(data.session);
+        navigate("/", { replace: true });
       })
-      .then((user) => {
-        // Birinchi hisob ro'yxatga yoziladi va darhol faol
-        // bo'ladi. Keyinchalik chap paneldan boshqa MFY tokeni
-        // qo'shilishi mumkin.
-        upsertAccount({
-          uid: user.uid,
-          username: user.username,
-          token: accessToken.trim(),
-        });
-        setActiveAccount(user.uid);
-
-        navigate("/", { state: { user } });
-      })
-      .catch(() => {
-        toast.error("Access key noto'g'ri yoki foydalanuvchi topilmadi.");
+      .catch((err) => {
+        toast.error(err?.message ?? "Parol noto'g'ri");
       })
       .finally(() => setIsSubmitting(false));
   };
@@ -64,27 +48,27 @@ const LoginPage = () => {
 
         <div className="text-center">
           <h1 className="text-xl font-bold text-ink">Onlayn mahalla</h1>
-          <p className="text-sm text-muted">Davom etish uchun tokenni kiriting</p>
+          <p className="text-sm text-muted">Davom etish uchun parolni kiriting</p>
         </div>
 
         <form className="flex w-full flex-col gap-4" onSubmit={handleSubmit}>
           <div className="flex items-center gap-2 rounded-xl bg-canvas px-4 py-3">
             <input
               required
-              name="accessToken"
-              autoComplete="off"
-              aria-label="Token"
-              value={accessToken}
-              placeholder="Tokenni kiriting"
+              name="password"
+              autoComplete="current-password"
+              aria-label="Parol"
+              value={password}
+              placeholder="Parolni kiriting"
               type={isVisible ? "text" : "password"}
-              onChange={(event) => setAccessToken(event.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
             />
 
             <button
               type="button"
               onClick={() => setIsVisible((visible) => !visible)}
-              aria-label={isVisible ? "Tokenni yashirish" : "Tokenni ko'rsatish"}
+              aria-label={isVisible ? "Parolni yashirish" : "Parolni ko'rsatish"}
               className="shrink-0 text-muted transition-colors hover:text-ink"
             >
               {isVisible ? (

@@ -1,8 +1,8 @@
 import axios from "axios";
-import { getActiveToken } from "./accounts.js";
+import { getSession, getActiveMahallaUid, logout } from "./accounts.js";
 
 /**
- * Tashqi so'rovlar uchun asosiy manzil.
+ * Server manzili.
  *
  * `.env` da manzil slash bilan tugashi mumkin
  * ("http://localhost:5000/"). Axios buni o'zi tuzatadi, lekin
@@ -17,32 +17,41 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
-// Token FAOL hisobdan olinadi. Boshqa mahallaga o'tish shu
-// yerda hal bo'ladi: hisob almashsa, keyingi so'rovlar o'z-o'zidan
-// yangi token bilan ketadi va server ularni boshqa MFY deb
-// qabul qiladi.
+// Har so'rovga:
+//   - server SESSIYASI (Authorization) — serverga kirish huquqi;
+//   - faol MFY uid (X-Mahalla-Uid) — qaysi mahalla ustida ishlash.
 //
-// Sarlavha ataylab har so'rovda qayta o'qiladi (bir marta
-// o'qib qo'yilmaydi) — aks holda hisob almashgach eski token
-// ishlatilib qolardi.
+// Ikkalasi har so'rovda qayta o'qiladi: MFY almashsa, keyingi
+// so'rovlar o'z-o'zidan yangi mahalla bilan ketadi. So'rovning o'zi
+// Authorization bergan bo'lsa (kirish), tegmaymiz.
 api.interceptors.request.use((config) => {
-  // So'rovning o'zi token bergan bo'lsa, tegmaymiz: kirish va yangi
-  // hisob qo'shish aynan BOSHQA token bilan tekshiriladi (hali
-  // ro'yxatda yo'q token). Aks holda interceptor uni faol hisob
-  // tokeniga almashtirib, tekshiruv noto'g'ri ketardi.
-  if (config.headers.Authorization) return config;
-
-  const accessToken = getActiveToken();
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
+  if (!config.headers.Authorization) {
+    const session = getSession();
+    if (session) config.headers.Authorization = `Bearer ${session}`;
   }
+
+  // Mahalla uid'ini so'rov o'zi bermagan bo'lsa, faol MFY dan olamiz.
+  if (!config.headers["X-Mahalla-Uid"]) {
+    const uid = getActiveMahallaUid();
+    if (uid) config.headers["X-Mahalla-Uid"] = uid;
+  }
+
   return config;
 });
 
-// Response
+// Javob: 401 — sessiya tugagan, kirish sahifasiga qaytaramiz.
 api.interceptors.response.use(
   (res) => res.data,
-  (err) => Promise.reject(err.response?.data || err),
+  (err) => {
+    if (err.response?.status === 401) {
+      logout();
+      // Kirish sahifasiga — faqat brauzerda.
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(err.response?.data || err);
+  },
 );
 
 export default api;
