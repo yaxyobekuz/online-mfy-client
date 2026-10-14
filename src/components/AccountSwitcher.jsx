@@ -206,36 +206,24 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex w-full flex-col gap-1.5 rounded-2xl p-2.5 text-left transition-colors hover:bg-black/5"
+        className="flex w-full items-center gap-2.5 rounded-2xl p-2.5 text-left transition-colors hover:bg-black/5"
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <div className="flex w-full items-center gap-3">
-          {/* Faollik belgisi */}
-          <StatusDot
-            active={activeLive?.active}
-            expired={activeMfy?.status === "expired"}
-          />
+        {/* Faollik belgisi */}
+        <StatusDot
+          active={activeLive?.active}
+          expired={activeMfy?.status === "expired"}
+        />
 
-          <div className="flex min-w-0 flex-1 flex-col">
-            <p className="truncate text-xl font-bold text-ink">
-              {mahallaName ?? activeMfy?.mahallaName ?? "Mahalla tanlanmagan"}
-            </p>
-            <p className="truncate text-sm text-muted">
-              {activeMfy?.username ?? "MFY tanlanmagan"}
-            </p>
-          </div>
+        {/* Nom — qalin, lekin qisqa; qolgan joyni progress egallaydi */}
+        <p className="max-w-[45%] shrink-0 truncate text-xl font-bold text-ink">
+          {mahallaName ?? activeMfy?.mahallaName ?? "Mahalla tanlanmagan"}
+        </p>
 
-          <ChevronsUpDown
-            className="size-5 shrink-0 text-muted"
-            aria-hidden="true"
-          />
-        </div>
-
-        {/* Faol MFY uchun jonli progress — yig'ilgan holatda ham
-            ishlayotgani ko'rinib tursin. */}
-        {activeLive?.active && activeLive.homesTotal > 0 && (
-          <div className="flex w-full items-center gap-2 pl-1">
+        {/* Jonli progress — nom bilan bir qatorda (dropdown kabi) */}
+        {activeLive?.active && activeLive.homesTotal > 0 ? (
+          <>
             <div className="h-1 flex-1 overflow-hidden rounded-full bg-black/10">
               <div
                 className="h-full rounded-full bg-ok transition-[width] duration-500"
@@ -245,8 +233,18 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
             <span className="shrink-0 text-xs font-medium text-ok">
               {activeLive.percent}%
             </span>
-          </div>
+          </>
+        ) : (
+          // Faol emas — username'ni o'rta joyda ko'rsatamiz.
+          <span className="min-w-0 flex-1 truncate text-sm text-muted">
+            {activeMfy?.username ?? "MFY tanlanmagan"}
+          </span>
         )}
+
+        <ChevronsUpDown
+          className="size-5 shrink-0 text-muted"
+          aria-hidden="true"
+        />
       </button>
 
       {isOpen && (
