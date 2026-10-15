@@ -202,10 +202,9 @@ const HomeMembersPage = () => {
               Qo&rsquo;shimcha a&rsquo;zolar
             </p>
             <p className="text-sm text-muted">
-              Umumiy bazada yo&rsquo;q {result.total.toLocaleString("uz-UZ")} ta
-              a&rsquo;zo
-              {stored > 0
-                ? ` (jami yuklangan: ${stored.toLocaleString("uz-UZ")})`
+              {result.total.toLocaleString("uz-UZ")} ta a&rsquo;zo
+              {isScanning && scan?.homesTotal
+                ? ` · yuklanmoqda: ${scan.homesDone}/${scan.homesTotal} xonadon`
                 : ""}
             </p>
           </div>
@@ -290,8 +289,8 @@ const HomeMembersPage = () => {
             <p className="flex flex-1 items-center justify-center text-center text-sm text-muted">
               {search
                 ? `"${search}" bo'yicha hech narsa topilmadi.`
-                : stored > 0
-                  ? "Qo'shimcha a'zo yo'q — barcha a'zolar umumiy bazada mavjud."
+                : isScanning
+                  ? "Yuklanmoqda…"
                   : 'Hozircha ma’lumot yo’q — "Yuklash" tugmasini bosing.'}
             </p>
           ) : (
