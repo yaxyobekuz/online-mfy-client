@@ -116,7 +116,7 @@ const DashboardPage = () => {
             ) : (
               <button
                 type="button"
-                onClick={dashboard.pause}
+                onClick={dashboard.stop}
                 disabled={dashboard.isBusy}
                 className="flex items-center gap-4 rounded-full bg-bad-soft px-6 py-4 text-base font-medium text-bad transition-opacity hover:opacity-80 disabled:opacity-50"
               >
