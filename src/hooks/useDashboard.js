@@ -199,6 +199,26 @@ export const useDashboard = (accountUid = null) => {
     [],
   );
 
+  // "Qo'shimcha a'zolar" rejimi — yuklangan a'zolarni kadastr
+  // bo'yicha oila a'zosi sifatida qo'shadi.
+  const extraStart = useCallback(() => {
+    setIsBusy(true);
+    setOptimisticRunning(true);
+
+    return api
+      .post("/api/dashboard/extra-start")
+      .then((data) => {
+        toast.success(data.message ?? "Qo'shimcha a'zolar rejimi boshlandi");
+        return true;
+      })
+      .catch((err) => {
+        setOptimisticRunning(null);
+        toast.error(err?.message ?? "Qo'shimcha rejimni boshlashda xatolik");
+        return false;
+      })
+      .finally(() => setIsBusy(false));
+  }, []);
+
   // --- "Hisoblash" ---
   //
   // Mahallani aniqlash: platformadagi xonadonlar yuklanib, kadastri
@@ -317,5 +337,6 @@ export const useDashboard = (accountUid = null) => {
     pause: () => control("pause"),
     stop: () => control("stop"),
     randomStart,
+    extraStart,
   };
 };

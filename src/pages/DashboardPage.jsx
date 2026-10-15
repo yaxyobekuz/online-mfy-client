@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Calculator, Loader, Pause, Play, Shuffle } from "lucide-react";
+import { Calculator, Loader, Pause, Play, Shuffle, UserPlus } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard.js";
 import KpiCard from "../components/KpiCard.jsx";
 import LiveFeed from "../components/LiveFeed.jsx";
@@ -111,6 +111,18 @@ const DashboardPage = () => {
                 >
                   <Shuffle className="size-6" aria-hidden="true" />
                   Random
+                </button>
+
+                {/* Qo'shimcha a'zolar — yuklangan a'zolarni kadastr
+                    bo'yicha oila a'zosi sifatida qo'shadi. */}
+                <button
+                  type="button"
+                  onClick={dashboard.extraStart}
+                  disabled={dashboard.isBusy}
+                  className="flex items-center gap-4 rounded-full bg-brand/10 px-6 py-4 text-base font-medium text-brand transition-opacity hover:opacity-80 disabled:opacity-50"
+                >
+                  <UserPlus className="size-6" aria-hidden="true" />
+                  Qo&rsquo;shimcha
                 </button>
               </>
             ) : (
