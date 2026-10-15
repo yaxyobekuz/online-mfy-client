@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronsUpDown,
+  Copy,
+  CopyCheck,
   Eye,
   EyeOff,
   LogOut,
@@ -61,6 +63,8 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
   const [live, setLive] = useState({});
   // Yashirilgan MFY lar ham ko'rsatilsinmi.
   const [showHidden, setShowHidden] = useState(false);
+  // Token nusxalangan MFY uid — tugmada "nusxalandi" belgisi uchun.
+  const [copiedUid, setCopiedUid] = useState(null);
 
   const boxRef = useRef(null);
 
@@ -213,6 +217,34 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
         onChanged();
       })
       .catch((err) => toast.error(err?.message ?? "Amal bajarilmadi"));
+  };
+
+  // Tokenni nusxalash — serverdan xom tokenni olib, clipboard'ga.
+  const handleCopyToken = (event, mfy) => {
+    event.stopPropagation();
+
+    api
+      .get(`/api/mfy-tokens/${mfy.uid}/token`)
+      .then(async (data) => {
+        const value = data?.token ?? "";
+        try {
+          await navigator.clipboard.writeText(value);
+        } catch {
+          // clipboard API ishlamasa (https emas) — zaxira usul.
+          const ta = document.createElement("textarea");
+          ta.value = value;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+        }
+        toast.success("Token nusxalandi");
+        setCopiedUid(mfy.uid);
+        setTimeout(() => setCopiedUid(null), 1500);
+      })
+      .catch((err) => toast.error(err?.message ?? "Nusxalashda xatolik"));
   };
 
   const handleLogout = () => {
@@ -392,6 +424,21 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
                     <RefreshCw className="size-4" aria-hidden="true" />
                   </button>
                 )}
+
+                {/* Tokenni nusxalash */}
+                <button
+                  type="button"
+                  onClick={(event) => handleCopyToken(event, mfy)}
+                  aria-label={`${mfy.username} tokenini nusxalash`}
+                  title="Tokenni nusxalash"
+                  className="shrink-0 text-muted transition-colors hover:text-brand"
+                >
+                  {copiedUid === mfy.uid ? (
+                    <CopyCheck className="size-4 text-ok" aria-hidden="true" />
+                  ) : (
+                    <Copy className="size-4" aria-hidden="true" />
+                  )}
+                </button>
 
                 {/* Yashirish / qayta ochish */}
                 <button
