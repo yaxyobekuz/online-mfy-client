@@ -245,7 +245,8 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
           {mahallaName ?? activeMfy?.mahallaName ?? "Mahalla tanlanmagan"}
         </p>
 
-        {/* Jonli progress — nom bilan bir qatorda (dropdown kabi) */}
+        {/* Jonli progress — nom bilan bir qatorda (dropdown kabi).
+            Faol emas bo'lsa bo'sh joy: username ko'rsatilmaydi. */}
         {activeLive?.active && activeLive.homesTotal > 0 ? (
           <>
             <div className="h-1 flex-1 overflow-hidden rounded-full bg-black/10">
@@ -259,10 +260,7 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
             </span>
           </>
         ) : (
-          // Faol emas — username'ni o'rta joyda ko'rsatamiz.
-          <span className="min-w-0 flex-1 truncate text-sm text-muted">
-            {activeMfy?.username ?? "MFY tanlanmagan"}
-          </span>
+          <span className="flex-1" />
         )}
 
         <ChevronsUpDown
