@@ -155,7 +155,20 @@ const DashboardPage = () => {
             />
             <KpiCard
               label="Kiritildi"
-              value={`${dashboard.run.randomAdded ?? 0} ta`}
+              value={
+                <span className="flex items-baseline gap-1.5">
+                  <span className="text-ok">
+                    {dashboard.run.randomAdded ?? 0} ta
+                  </span>
+                  {/* Barcha random yurishlar bo'yicha jami. */}
+                  {(dashboard.run.randomAddedTotal ?? 0) >
+                  (dashboard.run.randomAdded ?? 0) ? (
+                    <span className="text-base text-warn">
+                      / {dashboard.run.randomAddedTotal} ta
+                    </span>
+                  ) : null}
+                </span>
+              }
               percent={percentOf(
                 dashboard.run.randomAdded ?? 0,
                 dashboard.run.randomTarget ?? 0,
