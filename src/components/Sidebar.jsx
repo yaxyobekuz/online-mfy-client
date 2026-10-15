@@ -8,13 +8,13 @@ import AccountSwitcher from "./AccountSwitcher.jsx";
  *
  * Bo'limlar: boshqaruv (Asosiy), hisobot (Statistika), manba
  * (Umumiy ma'lumotlar ba'zasi) va platformadan yuklangan xonadon
- * a'zolari (MFY xonadon a'zolari).
+ * a'zolari (Qo'shimcha a'zolar).
  */
 const links = [
   { to: "/", label: "Asosiy", icon: House },
   { to: "/statistika", label: "Statistika", icon: ChartNoAxesColumn },
   { to: "/baza", label: "Umumiy ma'lumotlar ba'zasi", icon: Database },
-  { to: "/xonadonlar", label: "MFY xonadon a'zolari", icon: Users },
+  { to: "/xonadonlar", label: "Qo'shimcha a'zolar", icon: Users },
 ];
 
 const Sidebar = ({ mahallaName, active, mahallas, onAccountChanged }) => (

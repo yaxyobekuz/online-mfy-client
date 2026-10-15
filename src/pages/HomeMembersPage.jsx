@@ -7,7 +7,8 @@ import api, { apiBaseUrl } from "../config/api";
 import { getSession, getActiveMahallaUid } from "../config/accounts.js";
 
 /**
- * MFY xonadon a'zolari — platformadan to'liq yuklab olinadi.
+ * Qo'shimcha a'zolar — platformada bor, lekin umumiy fuqarolar
+ * bazasida ("Jami aholi") YO'Q bo'lgan xonadon a'zolari.
  *
  * Har a'zoga XONADON KADASTRI biriktiriladi va qarindoshlik
  * (relationship) ham ko'rsatiladi. Yuklash fonda ketadi (minglab
@@ -198,12 +199,13 @@ const HomeMembersPage = () => {
         <header className="flex w-full shrink-0 flex-wrap items-center justify-between gap-4 py-2">
           <div>
             <p className="text-xl font-bold text-ink">
-              MFY xonadon a&rsquo;zolari
+              Qo&rsquo;shimcha a&rsquo;zolar
             </p>
             <p className="text-sm text-muted">
-              {result.total.toLocaleString("uz-UZ")} ta a&rsquo;zo
-              {stored > 0 && result.total !== stored
-                ? ` (jami saqlangan: ${stored.toLocaleString("uz-UZ")})`
+              Umumiy bazada yo&rsquo;q {result.total.toLocaleString("uz-UZ")} ta
+              a&rsquo;zo
+              {stored > 0
+                ? ` (jami yuklangan: ${stored.toLocaleString("uz-UZ")})`
                 : ""}
             </p>
           </div>
@@ -288,12 +290,14 @@ const HomeMembersPage = () => {
             <p className="flex flex-1 items-center justify-center text-center text-sm text-muted">
               {search
                 ? `"${search}" bo'yicha hech narsa topilmadi.`
-                : 'Hozircha ma’lumot yo’q — "Yuklash" tugmasini bosing.'}
+                : stored > 0
+                  ? "Qo'shimcha a'zo yo'q — barcha a'zolar umumiy bazada mavjud."
+                  : 'Hozircha ma’lumot yo’q — "Yuklash" tugmasini bosing.'}
             </p>
           ) : (
             <div className="min-h-0 flex-1 overflow-auto">
-              <Table aria-label="MFY xonadon a'zolari">
-                <Table.Content aria-label="MFY xonadon a'zolari">
+              <Table aria-label="Qo'shimcha a'zolar">
+                <Table.Content aria-label="Qo'shimcha a'zolar">
                   <Table.Header columns={columns}>
                     {(column) => (
                       <Table.Column isRowHeader={column.id === "n"}>
