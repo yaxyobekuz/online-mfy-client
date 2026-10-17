@@ -1,50 +1,14 @@
 import { useEffect, useState } from "react";
 import { Modal, Spinner, useOverlayState } from "@heroui/react";
 import api from "../config/api";
+import { Field, Json, Section } from "./DetailFields.jsx";
 import {
   DOCUMENT_TYPE_LABELS,
   MEMBER_STATUS_LABELS,
+  MEMBER_STATUS_TONE,
   RELATIONSHIP_LABELS,
   STUDY_LEVEL_LABELS,
 } from "../config/registration-labels.js";
-
-/*
-  `dl`/`dt`/`dd` ataylab ishlatilmaydi: HeroUI modal ichida ularga
-  o'z ranglarini beradi (navbatma-navbat ko'k, sariq...) va ro'yxat
-  ola-bula bo'lib ko'rinardi. Oddiy `div` bunday uslubga tushmaydi.
-*/
-const Field = ({ label, value, mono }) => (
-  <div className="min-w-0">
-    <p className="text-xs text-muted">{label}</p>
-    <p className={`truncate text-sm text-ink ${mono ? "font-mono" : ""}`}>
-      {value ?? "—"}
-    </p>
-  </div>
-);
-
-const Section = ({ title, children }) => (
-  <div className="rounded-xl bg-panel p-4">
-    <h4 className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">
-      {title}
-    </h4>
-    {children}
-  </div>
-);
-
-const Json = ({ data }) => (
-  <pre className="max-h-64 overflow-auto rounded-lg bg-neutral-950 px-3 py-2 font-mono text-xs leading-relaxed text-white/80">
-    {JSON.stringify(data, null, 2)}
-  </pre>
-);
-
-// Jonli ro'yxatdagi rang bilan bir xil bo'lishi kerak.
-const STATUS_TONE = {
-  added: "bg-ok-soft text-ok",
-  exists: "bg-ok-soft text-ok",
-  failed: "bg-bad-soft text-bad",
-  skipped: "bg-warn-soft text-warn",
-  pending: "bg-panel text-muted",
-};
 
 /**
  * Bitta odamning to'liq yo'li: davlat bazasidan nima kelgani,
@@ -109,7 +73,7 @@ const MemberDetailsModal = ({ memberId, isOpen, onOpenChange }) => {
                   <div className="flex flex-wrap items-center gap-2">
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        STATUS_TONE[member.status] ?? STATUS_TONE.pending
+                        MEMBER_STATUS_TONE[member.status] ?? MEMBER_STATUS_TONE.pending
                       }`}
                     >
                       {MEMBER_STATUS_LABELS[member.status] ?? member.status}

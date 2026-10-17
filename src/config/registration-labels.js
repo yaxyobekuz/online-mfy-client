@@ -13,6 +13,8 @@ export const MEMBER_STATUS_LABELS = {
   exists: "Allaqachon bor",
   skipped: "O'tkazildi",
   failed: "Xatolik",
+  // Boshqa MFY da ro'yxatda — hisobot kartochkasi bo'yicha ro'yxatda.
+  movedAway: "Boshqa MFY da",
 };
 
 export const MEMBER_STATUS_COLORS = {
@@ -95,4 +97,24 @@ export const RELATIONSHIP_LABELS = {
 export const DOCUMENT_TYPE_LABELS = {
   1: "Passport / ID-karta",
   2: "Tug'ilganlik guvohnomasi",
+};
+
+// Odam va xonadon holatlarining rangi (badge fon + matn). Ro'yxat,
+// hisobot va "Ba'tafsil" oynalarida bir xil ko'rinishi uchun shu yerda.
+export const MEMBER_STATUS_TONE = {
+  added: "bg-ok-soft text-ok",
+  exists: "bg-ok-soft text-ok",
+  movedAway: "bg-warn-soft text-warn",
+  failed: "bg-bad-soft text-bad",
+  skipped: "bg-warn-soft text-warn",
+  pending: "bg-panel text-muted",
+};
+
+export const HOME_STATUS_TONE = {
+  pending: "bg-panel text-muted",
+  processing: "bg-brand-soft text-brand",
+  done: "bg-ok-soft text-ok",
+  partial: "bg-warn-soft text-warn",
+  skipped: "bg-panel text-muted",
+  failed: "bg-bad-soft text-bad",
 };
