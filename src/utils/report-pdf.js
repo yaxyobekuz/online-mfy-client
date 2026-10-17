@@ -292,27 +292,6 @@ const drawBreakdown = (doc, report) => {
       2: { halign: "right", cellWidth: 36 },
     },
   });
-
-  drawNotes(doc, doc.lastAutoTable.finalY + 10);
-};
-
-const NOTES = [
-  "Sarflangan umumiy vaqt: shu hisob doirasidagi barcha urinishlar davomiyligining yig'indisi.",
-  "Ma'lumotlari olingan aholi: shu yurish xonadonlaridagi barcha fuqarolar. Ko'rib chiqildi: ulardan yakuniy natija olinganlari, ya'ni kutilmoqdagilar hisobga olinmagan.",
-  "Boshqa MFY yoki allaqachon ro'yxatda: platformada avvaldan mavjud bo'lgan yoki boshqa mahallada ro'yxatda turgan aholi.",
-  "Ro'yxatga olib bo'lmagan: urinish xato bilan yakunlangan aholi (ma'lumot mos kelmagan, hujjat yaroqsiz va h.k.).",
-];
-
-const drawNotes = (doc, y) => {
-  drawSection(doc, "Izoh", y);
-
-  setText(doc, { size: 8.5, color: COLORS.muted });
-  let cursor = y + 6;
-  for (const note of NOTES) {
-    const lines = doc.splitTextToSize(note, CONTENT_WIDTH);
-    doc.text(lines, MARGIN, cursor);
-    cursor += lines.length * 4.2 + 2;
-  }
 };
 
 const drawFooter = (doc) => {
