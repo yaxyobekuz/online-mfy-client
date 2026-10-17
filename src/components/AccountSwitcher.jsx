@@ -14,11 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../config/api.js";
-import {
-  getActiveMahallaUid,
-  setActiveMahallaUid,
-  logout,
-} from "../config/accounts.js";
+import { setActiveMahallaUid, logout } from "../config/accounts.js";
 
 /**
  * MFY almashtirgich — chap panel tepasida.
@@ -52,7 +48,13 @@ const StatusDot = ({ active, expired }) => (
   </span>
 );
 
-const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
+const AccountSwitcher = ({
+  active,
+  mahallas,
+  onChanged,
+  onSwitchMahalla,
+  mahallaName,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [token, setToken] = useState("");
@@ -118,7 +120,8 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
     };
   }, []);
 
-  const activeUid = active?.uid ?? getActiveMahallaUid();
+  // Faol MFY — MANZILDAN (MainLayout `active` ni shundan topadi).
+  const activeUid = active?.uid ?? null;
 
   // Yangi MFY qo'shish.
   const handleAdd = (event) => {
@@ -131,11 +134,12 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
       .post("/api/mfy-tokens", { token: value })
       .then((mfy) => {
         toast.success(`"${mfy.username}" MFY qo'shildi`);
-        setActiveMahallaUid(mfy.uid);
         setToken("");
         setIsAdding(false);
         setIsOpen(false);
-        onChanged();
+        // Ro'yxat yangilangach yangi MFY manziliga o'tamiz: usiz
+        // manzil eski mahallada qolib ketardi.
+        Promise.resolve(onChanged()).then(() => onSwitchMahalla(mfy.uid));
       })
       .catch((err) => toast.error(err?.message ?? "Token yaroqsiz"))
       .finally(() => setIsBusy(false));
@@ -168,10 +172,9 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
       return;
     }
 
-    if (mfy.uid !== activeUid) {
-      setActiveMahallaUid(mfy.uid);
-      onChanged();
-    }
+    // MFY almashtirish — MANZILNI almashtirish: "/kiyali" ->
+    // "/zaxkash". Joriy bo'lim saqlanadi (MainLayout hal qiladi).
+    if (mfy.uid !== activeUid) onSwitchMahalla(mfy.uid);
     setIsOpen(false);
   };
 
@@ -190,12 +193,16 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
       .delete(`/api/mfy-tokens/${mfy.uid}`)
       .then(() => {
         toast.success("MFY o'chirildi");
-        // Faol MFY o'chirilsa — boshqasiga o'tamiz.
-        if (mfy.uid === activeUid) {
-          const next = mahallas.find((m) => m.uid !== mfy.uid);
-          setActiveMahallaUid(next?.uid ?? null);
-        }
-        onChanged();
+        const next =
+          mfy.uid === activeUid
+            ? mahallas.find((m) => m.uid !== mfy.uid)
+            : null;
+
+        Promise.resolve(onChanged()).then(() => {
+          // Faol MFY o'chirilsa — boshqasining manziliga o'tamiz.
+          if (next) onSwitchMahalla(next.uid);
+          else if (mfy.uid === activeUid) setActiveMahallaUid(null);
+        });
       })
       .catch((err) => toast.error(err?.message ?? "O'chirishda xatolik"))
       .finally(() => setIsBusy(false));
@@ -210,11 +217,14 @@ const AccountSwitcher = ({ active, mahallas, onChanged, mahallaName }) => {
       .patch(`/api/mfy-tokens/${mfy.uid}/visibility`, { hidden: nextHidden })
       .then(() => {
         // Faol MFY yashirilsa — ko'rinadigan boshqasiga o'tamiz.
-        if (nextHidden && mfy.uid === activeUid) {
-          const next = mahallas.find((m) => m.uid !== mfy.uid && !m.hidden);
-          if (next) setActiveMahallaUid(next.uid);
-        }
-        onChanged();
+        const next =
+          nextHidden && mfy.uid === activeUid
+            ? mahallas.find((m) => m.uid !== mfy.uid && !m.hidden)
+            : null;
+
+        Promise.resolve(onChanged()).then(() => {
+          if (next) onSwitchMahalla(next.uid);
+        });
       })
       .catch((err) => toast.error(err?.message ?? "Amal bajarilmadi"));
   };

@@ -1,18 +1,32 @@
 import { useCallback, useEffect, useState } from "react";
 import { Spinner } from "@heroui/react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useNavigate, useParams } from "react-router-dom";
 import api from "../config/api";
 import {
   isLoggedIn,
   getActiveMahallaUid,
   setActiveMahallaUid,
 } from "../config/accounts.js";
+import { findMfyBySlug, uniqueSlugs } from "../config/slug.js";
 import Sidebar from "../components/Sidebar.jsx";
+import EmptyState from "./EmptyState.jsx";
 
+/**
+ * Qaysi mahalla ustida ishlayotganimiz MANZILDAN keladi
+ * (`/kiyali/...`), localStorage'dan emas. localStorage endi faqat
+ * ikki narsa uchun kerak:
+ *
+ *   1. `api.js` har so'rovga `X-Mahalla-Uid` qo'shadi — shuning
+ *      uchun manzildan topilgan uid u yerga ham yoziladi;
+ *   2. mahallasiz manzil ochilganda ("/") qayerga yo'naltirishni
+ *      bilish uchun — "oxirgi ko'rilgan mahalla".
+ */
 const MainLayout = () => {
-  // MFY ro'yxati SERVERdan olinadi; faol MFY uid brauzerda.
+  const { mahallaSlug } = useParams();
+  const navigate = useNavigate();
+
+  // MFY ro'yxati SERVERdan olinadi.
   const [mahallas, setMahallas] = useState(null); // null — hali yuklanmagan
-  const [activeUid, setActiveUid] = useState(() => getActiveMahallaUid());
   const [mahallaName, setMahallaName] = useState(null);
   const [nameLoadedFor, setNameLoadedFor] = useState(null);
 
@@ -22,27 +36,7 @@ const MainLayout = () => {
   const refreshMahallas = useCallback(() => {
     return api
       .get("/api/mfy-tokens")
-      .then((list) => {
-        setMahallas(list);
-
-        // Faol MFY tanlanmagan yoki o'chirilgan bo'lsa — birinchi
-        // aktivni tanlaymiz.
-        const current = getActiveMahallaUid();
-        const stillExists = list.some((m) => m.uid === current);
-
-        if (!stillExists) {
-          // Yashirilmagan, ishlaydigan MFY ni afzal ko'ramiz.
-          const pick =
-            list.find((m) => !m.hidden && m.status === "active") ??
-            list.find((m) => !m.hidden) ??
-            list[0] ??
-            null;
-          setActiveMahallaUid(pick?.uid ?? null);
-          setActiveUid(pick?.uid ?? null);
-        } else {
-          setActiveUid(current);
-        }
-      })
+      .then(setMahallas)
       .catch(() => setMahallas([]));
   }, []);
 
@@ -50,14 +44,27 @@ const MainLayout = () => {
     if (loggedIn) refreshMahallas();
   }, [loggedIn, refreshMahallas]);
 
+  // Manzildagi nom bo'yicha MFY. Ro'yxat kelmaguncha — `undefined`.
+  const active = mahallas ? findMfyBySlug(mahallas, mahallaSlug) : undefined;
+  const activeUid = active?.uid ?? null;
+
+  // Faol MFY ni `api.js` uchun yozib qo'yamiz (u har so'rovga
+  // `X-Mahalla-Uid` qo'shadi) va "oxirgi ko'rilgan" sifatida
+  // eslab qolamiz.
+  //
+  // Render paytida yozamiz, effektda emas: effekt renderdan KEYIN
+  // ishlaydi, pastdagi sahifalar esa o'z so'rovlarini shu render
+  // ichidayoq yuborishi mumkin — u holda so'rov eski mahalla uid'i
+  // bilan ketardi.
+  if (activeUid && getActiveMahallaUid() !== activeUid) {
+    setActiveMahallaUid(activeUid);
+  }
+
   // Faol MFY nomini (chap panelda ko'rsatish uchun) dashboard'dan
   // o'qiymiz. MFY almashsa qayta so'raladi.
   useEffect(() => {
     let cancelled = false;
 
-    // MFY tanlanmagan — nom yo'q. setState'ni effekt tanasida
-    // to'g'ridan-to'g'ri emas, mikrovazifada chaqiramiz (cascading
-    // render ogohlantirishi bo'lmasin).
     if (!activeUid) {
       Promise.resolve().then(() => {
         if (!cancelled) {
@@ -90,18 +97,53 @@ const MainLayout = () => {
     };
   }, [activeUid]);
 
+  /**
+   * MFY almashtirgich chaqiradi: boshqa mahallaga o'tish — endi bu
+   * MANZILNI almashtirish. Joriy bo'lim saqlanadi: statistikada
+   * turib mahalla almashtirilsa, yangi mahallaning statistikasiga
+   * tushadi.
+   */
+  const handleSwitchMahalla = useCallback(
+    (uid) => {
+      const slug = uniqueSlugs(mahallas ?? []).get(uid);
+      if (!slug) return;
+
+      // "/kiyali/statistika" -> "statistika"
+      const section = window.location.pathname
+        .split("/")
+        .filter(Boolean)
+        .slice(1)
+        .join("/");
+
+      navigate(`/${slug}${section ? `/${section}` : ""}`);
+    },
+    [mahallas, navigate],
+  );
+
   if (!loggedIn) return <Navigate to="/login" replace />;
 
   // MFY ro'yxati hali yuklanmagan.
   if (mahallas === null) return <LoadingContent />;
 
-  // Birorta MFY yo'q — ro'yxatni ochib qo'shishni kutamiz, lekin
-  // sahifa baribir ko'rinadi (bo'sh holat).
-  const active = mahallas.find((m) => m.uid === activeUid) ?? null;
+  // Manzildagi nom bo'yicha mahalla topilmadi.
+  if (!active) {
+    // Birorta MFY bo'lmasa — bo'sh holat: panel ko'rinadi, undan
+    // MFY qo'shiladi. Aks holda manzil noto'g'ri: mavjudiga
+    // yo'naltiramiz.
+    if (!mahallas.length) {
+      return (
+        <EmptyState
+          mahallas={mahallas}
+          onAccountChanged={refreshMahallas}
+          onSwitchMahalla={handleSwitchMahalla}
+        />
+      );
+    }
+    return <Navigate to="/" replace />;
+  }
 
   // MFY bor, lekin nomi hali yuklanmagan.
-  const isNameLoading = activeUid && nameLoadedFor !== activeUid;
-  if (isNameLoading) return <LoadingContent />;
+  if (nameLoadedFor !== activeUid) return <LoadingContent />;
 
   return (
     <div className="flex h-svh bg-canvas">
@@ -110,13 +152,14 @@ const MainLayout = () => {
         active={active}
         mahallas={mahallas}
         onAccountChanged={refreshMahallas}
+        onSwitchMahalla={handleSwitchMahalla}
       />
       {/*
         `key` — MFY almashganda sahifa butunlay qaytadan quriladi.
         Aks holda eski mahallaning ko'rsatkichlari yangisi kelguncha
         ekranda qolib turardi.
       */}
-      <Outlet key={activeUid ?? "none"} context={{ accountUid: activeUid }} />
+      <Outlet key={activeUid} context={{ accountUid: activeUid }} />
     </div>
   );
 };
