@@ -3,6 +3,7 @@ import { useOutletContext, useParams } from "react-router-dom";
 import { Calculator, Loader, Pause, Play, Shuffle, UserPlus } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard.js";
 import KpiCard from "../components/KpiCard.jsx";
+import ReportDownloadCard from "../components/ReportDownloadCard.jsx";
 import LiveFeed from "../components/LiveFeed.jsx";
 import MemberDetailsModal from "../components/MemberDetailsModal.jsx";
 import RandomStartModal from "../components/RandomStartModal.jsx";
@@ -195,7 +196,7 @@ const DashboardPage = () => {
             />
           </div>
         ) : (
-          <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-7">
+          <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-4">
             <KpiCard
               label="Jami aholi"
               value={`${stats.peopleTotal} ta`}
@@ -253,6 +254,7 @@ const DashboardPage = () => {
               value={`${stats.homesTotal} ta`}
               to={reportTo("homes")}
             />
+            <ReportDownloadCard disabled={!dashboard.run} />
           </div>
         )}
 
