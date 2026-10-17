@@ -5,6 +5,7 @@ import DashboardPage from "./pages/DashboardPage.jsx";
 import StatisticsPage from "./pages/StatisticsPage.jsx";
 import DatabasePage from "./pages/DatabasePage.jsx";
 import HomeMembersPage from "./pages/HomeMembersPage.jsx";
+import ReportListPage from "./pages/ReportListPage.jsx";
 import MainLayout from "./layouts/MainLayout.jsx";
 import MahallaRedirect from "./layouts/MahallaRedirect.jsx";
 import { StoreProvider } from "./context/StoreContext.jsx";
@@ -17,6 +18,7 @@ import { StoreProvider } from "./context/StoreContext.jsx";
  *   /kiyali/statistika   — Statistika
  *   /kiyali/baza         — Umumiy ma'lumotlar ba'zasi
  *   /kiyali/xonadonlar   — Qo'shimcha a'zolar
+ *   /kiyali/hisobot/:kind — Kartochka ro'yxati (Asosiy'dan bosiladi)
  *
  * Shu sababli qaysi mahalladaligimiz MANZILDAN o'qiladi, oldingidek
  * localStorage'dan emas: havolani ulashish, yangi oynada ochish va
@@ -37,6 +39,7 @@ const App = () => {
           <Route path="statistika" element={<StatisticsPage />} />
           <Route path="baza" element={<DatabasePage />} />
           <Route path="xonadonlar" element={<HomeMembersPage />} />
+          <Route path="hisobot/:kind" element={<ReportListPage />} />
         </Route>
 
         {/*

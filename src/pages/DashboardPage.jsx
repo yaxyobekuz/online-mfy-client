@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import { Calculator, Loader, Pause, Play, Shuffle, UserPlus } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard.js";
 import KpiCard from "../components/KpiCard.jsx";
@@ -23,7 +23,11 @@ const DashboardPage = () => {
   // Qaysi hisob nomidan ishlayapmiz — layout beradi. Hisob
   // almashsa, hook ma'lumotni qaytadan so'raydi.
   const { accountUid } = useOutletContext() ?? {};
+  const { mahallaSlug } = useParams();
   const dashboard = useDashboard(accountUid);
+
+  // Kartochka bosilganda — shu ko'rsatkichning ro'yxati.
+  const reportTo = (kind) => `/${mahallaSlug}/hisobot/${kind}`;
 
   const [memberId, setMemberId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -192,12 +196,17 @@ const DashboardPage = () => {
           </div>
         ) : (
           <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-7">
-            <KpiCard label="Jami aholi" value={`${stats.peopleTotal} ta`} />
+            <KpiCard
+              label="Jami aholi"
+              value={`${stats.peopleTotal} ta`}
+              to={reportTo("total")}
+            />
             <KpiCard
               label="Ro'yxatga olingan aholi"
               value={`${stats.added} ta`}
               percent={percentOf(stats.added, stats.peopleTotal)}
               tone="ok"
+              to={reportTo("added")}
             />
             {/*
               Platformada AVVALDAN turgan aholi — biz qo'shmaganmiz.
@@ -210,6 +219,7 @@ const DashboardPage = () => {
               value={`${stats.exists ?? 0} ta`}
               percent={percentOf(stats.exists ?? 0, stats.peopleTotal)}
               tone="brand"
+              to={reportTo("exists")}
             />
             {/*
               Boshqa MFY da ro'yxatda turgani uchun kirita
@@ -222,20 +232,27 @@ const DashboardPage = () => {
               value={`${stats.movedAway ?? 0} ta`}
               percent={percentOf(stats.movedAway ?? 0, stats.peopleTotal)}
               tone="warn"
+              to={reportTo("movedAway")}
             />
             <KpiCard
               label="Ro'yxatga olib bo'lmagan aholi"
               value={`${stats.failed} ta`}
               percent={percentOf(stats.failed, stats.peopleTotal)}
               tone="bad"
+              to={reportTo("failed")}
             />
             <KpiCard
               label="Ro'yxatga olinish kutilmoqda"
               value={`${stats.pending} ta`}
               percent={percentOf(stats.pending, stats.peopleTotal)}
               tone="pending"
+              to={reportTo("pending")}
             />
-            <KpiCard label="Jami xonadon" value={`${stats.homesTotal} ta`} />
+            <KpiCard
+              label="Jami xonadon"
+              value={`${stats.homesTotal} ta`}
+              to={reportTo("homes")}
+            />
           </div>
         )}
 

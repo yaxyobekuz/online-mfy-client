@@ -1,10 +1,13 @@
+import { Link } from "react-router-dom";
+
 /**
  * Ko'rsatkich kartasi — Figma maketidagi "KPI card" (node 1:79).
  *
  * Yuqorida kulrang izoh, pastda qiymat. Foiz berilsa, qiymatning
- * o'ng tomonida ko'rinadi.
+ * o'ng tomonida ko'rinadi. `to` berilsa — kartochka bosiladigan
+ * havola: shu ko'rsatkichning ro'yxati ochiladi.
  */
-const KpiCard = ({ label, value, percent, tone = "ink" }) => {
+const KpiCard = ({ label, value, percent, tone = "ink", to }) => {
   const toneClass = {
     ink: "text-ink",
     ok: "text-ok",
@@ -14,8 +17,8 @@ const KpiCard = ({ label, value, percent, tone = "ink" }) => {
     warn: "text-warn",
   }[tone];
 
-  return (
-    <div className="flex flex-col gap-2.5 rounded-xl bg-canvas p-3">
+  const content = (
+    <>
       <p className="truncate text-sm text-muted" title={label}>
         {label}
       </p>
@@ -29,7 +32,25 @@ const KpiCard = ({ label, value, percent, tone = "ink" }) => {
           <p className="text-sm whitespace-nowrap text-muted">{percent}%</p>
         )}
       </div>
-    </div>
+    </>
+  );
+
+  if (!to) {
+    return (
+      <div className="flex flex-col gap-2.5 rounded-xl bg-canvas p-3">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      to={to}
+      title={`${label} — ro'yxatni ochish`}
+      className="flex flex-col gap-2.5 rounded-xl bg-canvas p-3 transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand"
+    >
+      {content}
+    </Link>
   );
 };
 
