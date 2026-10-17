@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
-import { Calculator, Loader, Pause, Play, Shuffle, UserPlus } from "lucide-react";
+import { Calculator, Loader, Pause, Play, Settings, Shuffle, UserPlus } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard.js";
 import KpiCard from "../components/KpiCard.jsx";
 import ReportDownloadCard from "../components/ReportDownloadCard.jsx";
 import LiveFeed from "../components/LiveFeed.jsx";
 import MemberDetailsModal from "../components/MemberDetailsModal.jsx";
 import RandomStartModal from "../components/RandomStartModal.jsx";
+import StreetSettingsModal from "../components/StreetSettingsModal.jsx";
 
 /**
  * Asosiy sahifa — BOSHQARUV paneli (Figma node 1:2).
@@ -33,6 +34,7 @@ const DashboardPage = () => {
   const [memberId, setMemberId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRandomModalOpen, setIsRandomModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const stats = dashboard.stats ?? {
     peopleTotal: 0,
@@ -116,6 +118,21 @@ const DashboardPage = () => {
                 >
                   <Shuffle className="size-6" aria-hidden="true" />
                   Random
+                </button>
+
+                {/*
+                  Sozlama — random rejimda qaysi ko'chalarga ma'lumot
+                  kiritish mumkinligini belgilaydi ("номаълум" kabi
+                  texnik ko'chalarni chetlab o'tish uchun).
+                */}
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsModalOpen(true)}
+                  className="flex items-center justify-center rounded-full bg-brand/10 p-4 text-brand transition-opacity hover:opacity-80"
+                  aria-label="Ko'chalar sozlamasi"
+                  title="Ko'chalar sozlamasi"
+                >
+                  <Settings className="size-6" aria-hidden="true" />
                 </button>
 
                 {/* Qo'shimcha a'zolar — yuklangan a'zolarni kadastr
@@ -314,6 +331,11 @@ const DashboardPage = () => {
             if (ok) setIsRandomModalOpen(false);
           });
         }}
+      />
+
+      <StreetSettingsModal
+        isOpen={isSettingsModalOpen}
+        onOpenChange={setIsSettingsModalOpen}
       />
     </div>
   );
