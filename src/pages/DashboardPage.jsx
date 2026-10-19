@@ -78,11 +78,18 @@ const DashboardPage = () => {
             )}
 
             {/*
-              "Hisoblash" — MFY xonadonlarini bir martalik aniqlab
-              olish. Faqat kerak bo'lganda ko'rinadi: xonadonlar
-              yuklangandan keyin tugma o'rinsiz bo'ladi.
+              "Hisoblash" — MFY xonadonlarini platformadan aniqlab
+              olish. Tugma DOIMIY turadi: bir marta hisoblangach ham,
+              jarayon boshlanib tugagach ham ekranda qoladi. Sabab:
+              platformada xonadonlar o'zgaradi (yangi uy qo'shiladi,
+              kadastr to'g'rilanadi), shuning uchun mahallani istalgan
+              vaqtda qayta hisoblash kerak bo'ladi — server amalni
+              `upsert` bilan bajaradi, qayta bosish xavfsiz. Faqat
+              jarayon KETAYOTGANDA yashiriladi: o'sha paytda xonadonlar
+              bazasiga ishchi tegib turadi, uni qayta yozish ziddiyat
+              tug'dirardi.
             */}
-            {dashboard.needsScan && !dashboard.isRunning && (
+            {!dashboard.isRunning && (
               <button
                 type="button"
                 onClick={dashboard.scanMahalla}
