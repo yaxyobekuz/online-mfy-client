@@ -166,10 +166,12 @@ const StreetSettingsModal = ({ isOpen, onOpenChange }) => {
 
               {/* --- Ko'chalar --- */}
               <p className="mb-4 text-sm text-muted">
-                Random rejimda qaysi ko&rsquo;chalarga ma&rsquo;lumot
-                kiritish mumkinligini belgilang. Belgilanmagan
-                ko&rsquo;chalarga (masalan &ldquo;номаълум&rdquo;)
-                fuqaro qo&rsquo;shilmaydi.
+                Qaysi ko&rsquo;chalarga ma&rsquo;lumot kiritish
+                mumkinligini belgilang. Belgilanmagan ko&rsquo;chalarga
+                (masalan &ldquo;номаълум&rdquo;) fuqaro
+                qo&rsquo;shilmaydi &mdash;{" "}
+                <b className="text-ink">barcha rejimda</b>: Oddiy,
+                Kadastrsiz, Random va Qo&rsquo;shimcha.
               </p>
 
               {isLoading ? (
