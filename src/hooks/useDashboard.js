@@ -219,6 +219,27 @@ export const useDashboard = (accountUid = null) => {
       .finally(() => setIsBusy(false));
   }, []);
 
+  // "Kadastrsiz boshlash" — KADASTRSIZ bazadagi (tanlangan MFY
+  // guruhi) fuqarolarni familiya bo'yicha moslab kiritadi, mos
+  // kelmaganini random xonadonga taqsimlaydi.
+  const uncadastredStart = useCallback((groupId) => {
+    setIsBusy(true);
+    setOptimisticRunning(true);
+
+    return api
+      .post("/api/dashboard/uncadastred-start", { groupId })
+      .then((data) => {
+        toast.success(data.message ?? "Kadastrsiz rejim boshlandi");
+        return true;
+      })
+      .catch((err) => {
+        setOptimisticRunning(null);
+        toast.error(err?.message ?? "Kadastrsiz rejimni boshlashda xatolik");
+        return false;
+      })
+      .finally(() => setIsBusy(false));
+  }, []);
+
   // --- "Hisoblash" ---
   //
   // Mahallani aniqlash: platformadagi xonadonlar yuklanib, kadastri
@@ -338,5 +359,6 @@ export const useDashboard = (accountUid = null) => {
     stop: () => control("stop"),
     randomStart,
     extraStart,
+    uncadastredStart,
   };
 };

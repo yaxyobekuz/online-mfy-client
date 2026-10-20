@@ -1,12 +1,22 @@
 import { useEffect, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
-import { Calculator, Loader, Pause, Play, Settings, Shuffle, UserPlus } from "lucide-react";
+import {
+  Calculator,
+  DatabaseZap,
+  Loader,
+  Pause,
+  Play,
+  Settings,
+  Shuffle,
+  UserPlus,
+} from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard.js";
 import KpiCard from "../components/KpiCard.jsx";
 import ReportDownloadCard from "../components/ReportDownloadCard.jsx";
 import LiveFeed from "../components/LiveFeed.jsx";
 import MemberDetailsModal from "../components/MemberDetailsModal.jsx";
 import RandomStartModal from "../components/RandomStartModal.jsx";
+import UncadastredStartModal from "../components/UncadastredStartModal.jsx";
 import StreetSettingsModal from "../components/StreetSettingsModal.jsx";
 
 /**
@@ -35,6 +45,7 @@ const DashboardPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRandomModalOpen, setIsRandomModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isUncadastredModalOpen, setIsUncadastredModalOpen] = useState(false);
 
   const stats = dashboard.stats ?? {
     peopleTotal: 0,
@@ -153,6 +164,26 @@ const DashboardPage = () => {
                   <UserPlus className="size-6" aria-hidden="true" />
                   Qo&rsquo;shimcha
                 </button>
+
+                {/*
+                  Kadastrsiz boshlash — KADASTRSIZ bazadan (alohida
+                  bo'lim) fuqarolarni kiritadi. Taqsimlash serverda
+                  hisoblanadi: avval familiya bo'yicha mos xonadon
+                  qidiriladi, moslash imkoni bo'lmasa random.
+
+                  Modal orqali: qaysi MFY guruhidan ishlashni xodim
+                  o'zi tanlaydi — noto'g'ri guruhdan minglab odam
+                  kiritilsa, ortga qaytarib bo'lmaydi.
+                */}
+                <button
+                  type="button"
+                  onClick={() => setIsUncadastredModalOpen(true)}
+                  disabled={dashboard.isBusy}
+                  className="flex items-center gap-4 rounded-full bg-brand/10 px-6 py-4 text-base font-medium text-brand transition-opacity hover:opacity-80 disabled:opacity-50"
+                >
+                  <DatabaseZap className="size-6" aria-hidden="true" />
+                  Kadastrsiz boshlash
+                </button>
               </>
             ) : (
               <button
@@ -176,7 +207,58 @@ const DashboardPage = () => {
         </header>
 
         {/* --- Ko'rsatkichlar --- */}
-        {dashboard.run?.randomMode ? (
+        {dashboard.run?.uncadastredMode ? (
+          /*
+            Kadastrsiz rejim kartochkalari — kadastr rejimidagi
+            ko'rsatkichlar bu yerda ma'nosiz: "jami xonadon" va
+            "kutilmoqda" kadastr navbatiga tayanadi, kadastrsizda esa
+            navbat FUQAROLAR bo'yicha ketadi. Eng muhim son —
+            taqsimlash qanday bo'lgani: nechta odam o'z oilasiga
+            (familiya bo'yicha), nechtasi tasodifiy xonadonga tushdi.
+          */
+          <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
+            <KpiCard
+              label="Guruh"
+              value={dashboard.run.uncadastredGroupName ?? "—"}
+            />
+            <KpiCard
+              label="Jami yozuv"
+              value={`${dashboard.run.membersTotal ?? 0} ta`}
+            />
+            <KpiCard
+              label="Kiritildi"
+              value={`${dashboard.run.membersAdded ?? 0} ta`}
+              percent={percentOf(
+                dashboard.run.membersAdded ?? 0,
+                dashboard.run.membersTotal ?? 0,
+              )}
+              tone="ok"
+            />
+            <KpiCard
+              label="Familiya bo'yicha"
+              value={`${dashboard.run.matchedBySurname ?? 0} ta`}
+              percent={percentOf(
+                dashboard.run.matchedBySurname ?? 0,
+                dashboard.run.membersAdded ?? 0,
+              )}
+              tone="brand"
+            />
+            <KpiCard
+              label="Random taqsimlandi"
+              value={`${dashboard.run.matchedRandomly ?? 0} ta`}
+              percent={percentOf(
+                dashboard.run.matchedRandomly ?? 0,
+                dashboard.run.membersAdded ?? 0,
+              )}
+              tone="warn"
+            />
+            <KpiCard
+              label="Xato / o'tkazildi"
+              value={`${(dashboard.run.membersFailed ?? 0) + (dashboard.run.membersSkipped ?? 0)} ta`}
+              tone="bad"
+            />
+          </div>
+        ) : dashboard.run?.randomMode ? (
           <div className="grid w-full shrink-0 grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
             <KpiCard
               label="Maqsad"
@@ -289,7 +371,21 @@ const DashboardPage = () => {
             run?.randomMode && run.randomTarget > 0
               ? Math.round(((run.randomAdded ?? 0) / run.randomTarget) * 100)
               : null;
-          const pct = randomPercent ?? stats.percent;
+
+          // Kadastrsiz rejimda progress FUQAROLAR bo'yicha ketadi
+          // (xonadon navbati yo'q), shuning uchun `stats.percent`
+          // bu yerda 0 bo'lib qolardi.
+          const uncadastredPercent =
+            run?.uncadastredMode && run.membersTotal > 0
+              ? percentOf(
+                  (run.membersAdded ?? 0) +
+                    (run.membersFailed ?? 0) +
+                    (run.membersSkipped ?? 0),
+                  run.membersTotal,
+                )
+              : null;
+
+          const pct = uncadastredPercent ?? randomPercent ?? stats.percent;
 
           return (
             <div
@@ -298,7 +394,13 @@ const DashboardPage = () => {
               aria-valuenow={pct}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label={run?.randomMode ? "Random jarayon" : "Xonadonlar bo'yicha jarayon"}
+              aria-label={
+                run?.uncadastredMode
+                  ? "Kadastrsiz jarayon"
+                  : run?.randomMode
+                    ? "Random jarayon"
+                    : "Xonadonlar bo'yicha jarayon"
+              }
             >
               <div
                 className="h-full rounded-full bg-brand transition-[width] duration-500"
@@ -336,6 +438,17 @@ const DashboardPage = () => {
         onStart={(target) => {
           dashboard.randomStart(target).then((ok) => {
             if (ok) setIsRandomModalOpen(false);
+          });
+        }}
+      />
+
+      <UncadastredStartModal
+        isOpen={isUncadastredModalOpen}
+        onOpenChange={setIsUncadastredModalOpen}
+        isBusy={dashboard.isBusy}
+        onStart={(groupId) => {
+          dashboard.uncadastredStart(groupId).then((ok) => {
+            if (ok) setIsUncadastredModalOpen(false);
           });
         }}
       />
@@ -420,6 +533,23 @@ const StatusNote = ({ dashboard }) => {
   }
 
   if (run.error) return <span className="text-bad">{run.error}</span>;
+
+  if (run.uncadastredMode) {
+    const done =
+      (run.membersAdded ?? 0) +
+      (run.membersFailed ?? 0) +
+      (run.membersSkipped ?? 0);
+
+    return (
+      <span className="truncate">
+        Kadastrsiz
+        {run.uncadastredGroupName ? ` · ${run.uncadastredGroupName}` : ""}
+        {run.isActive ? "" : " · to’xtatilgan"} · {done}/
+        {run.membersTotal ?? 0} · {run.matchedBySurname ?? 0} familiya,{" "}
+        {run.matchedRandomly ?? 0} random
+      </span>
+    );
+  }
 
   if (run.randomMode) {
     if (!run.isActive) {

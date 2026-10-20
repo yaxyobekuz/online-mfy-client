@@ -1,5 +1,11 @@
 import { NavLink, useParams } from "react-router-dom";
-import { ChartNoAxesColumn, Database, House, Users } from "lucide-react";
+import {
+  ChartNoAxesColumn,
+  Database,
+  DatabaseZap,
+  House,
+  Users,
+} from "lucide-react";
 import logo from "../assets/logo.png";
 import AccountSwitcher from "./AccountSwitcher.jsx";
 
@@ -7,8 +13,9 @@ import AccountSwitcher from "./AccountSwitcher.jsx";
  * Chap panel — Figma maketidagi "Sidebar" (node 1:4).
  *
  * Bo'limlar: boshqaruv (Asosiy), hisobot (Statistika), manba
- * (Umumiy ma'lumotlar ba'zasi) va platformadan yuklangan xonadon
- * a'zolari (Qo'shimcha a'zolar).
+ * (Umumiy ma'lumotlar ba'zasi), kadastrsiz manba (Kadastrsiz
+ * ma'lumotlar) va platformadan yuklangan xonadon a'zolari
+ * (Qo'shimcha a'zolar).
  *
  * Havolalar mahalla nomidan boshlanadi: `/kiyali/statistika`.
  */
@@ -16,6 +23,7 @@ const links = [
   { to: "", label: "Asosiy", icon: House },
   { to: "statistika", label: "Statistika", icon: ChartNoAxesColumn },
   { to: "baza", label: "Umumiy ma'lumotlar ba'zasi", icon: Database },
+  { to: "kadastrsiz", label: "Kadastrsiz ma'lumotlar", icon: DatabaseZap },
   { to: "xonadonlar", label: "Qo'shimcha a'zolar", icon: Users },
 ];
 

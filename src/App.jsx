@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import StatisticsPage from "./pages/StatisticsPage.jsx";
 import DatabasePage from "./pages/DatabasePage.jsx";
+import UncadastredPage from "./pages/UncadastredPage.jsx";
 import HomeMembersPage from "./pages/HomeMembersPage.jsx";
 import ReportListPage from "./pages/ReportListPage.jsx";
 import MainLayout from "./layouts/MainLayout.jsx";
@@ -17,6 +18,7 @@ import { StoreProvider } from "./context/StoreContext.jsx";
  *   /kiyali              — Asosiy
  *   /kiyali/statistika   — Statistika
  *   /kiyali/baza         — Umumiy ma'lumotlar ba'zasi
+ *   /kiyali/kadastrsiz   — Kadastrsiz ma'lumotlar ba'zasi
  *   /kiyali/xonadonlar   — Qo'shimcha a'zolar
  *   /kiyali/hisobot/:kind — Kartochka ro'yxati (Asosiy'dan bosiladi)
  *
@@ -38,6 +40,7 @@ const App = () => {
           <Route index element={<DashboardPage />} />
           <Route path="statistika" element={<StatisticsPage />} />
           <Route path="baza" element={<DatabasePage />} />
+          <Route path="kadastrsiz" element={<UncadastredPage />} />
           <Route path="xonadonlar" element={<HomeMembersPage />} />
           <Route path="hisobot/:kind" element={<ReportListPage />} />
         </Route>
