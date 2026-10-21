@@ -15,6 +15,7 @@ import KpiCard from "../components/KpiCard.jsx";
 import ReportDownloadCard from "../components/ReportDownloadCard.jsx";
 import LiveFeed from "../components/LiveFeed.jsx";
 import MemberDetailsModal from "../components/MemberDetailsModal.jsx";
+import StartModal from "../components/StartModal.jsx";
 import RandomStartModal from "../components/RandomStartModal.jsx";
 import UncadastredStartModal from "../components/UncadastredStartModal.jsx";
 import StreetSettingsModal from "../components/StreetSettingsModal.jsx";
@@ -43,6 +44,7 @@ const DashboardPage = () => {
 
   const [memberId, setMemberId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStartModalOpen, setIsStartModalOpen] = useState(false);
   const [isRandomModalOpen, setIsRandomModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isUncadastredModalOpen, setIsUncadastredModalOpen] = useState(false);
@@ -120,7 +122,7 @@ const DashboardPage = () => {
               <>
                 <button
                   type="button"
-                  onClick={dashboard.start}
+                  onClick={() => setIsStartModalOpen(true)}
                   disabled={dashboard.isBusy || dashboard.isScanning}
                   className="flex items-center gap-4 rounded-full bg-ok-soft px-6 py-4 text-base font-medium text-ok transition-opacity hover:opacity-80 disabled:opacity-50"
                 >
@@ -431,12 +433,23 @@ const DashboardPage = () => {
         onOpenChange={setIsModalOpen}
       />
 
+      <StartModal
+        isOpen={isStartModalOpen}
+        onOpenChange={setIsStartModalOpen}
+        isBusy={dashboard.isBusy}
+        onStart={(entryMode) => {
+          dashboard.start(entryMode).then((ok) => {
+            if (ok) setIsStartModalOpen(false);
+          });
+        }}
+      />
+
       <RandomStartModal
         isOpen={isRandomModalOpen}
         onOpenChange={setIsRandomModalOpen}
         isBusy={dashboard.isBusy}
-        onStart={(target) => {
-          dashboard.randomStart(target).then((ok) => {
+        onStart={(target, entryMode) => {
+          dashboard.randomStart(target, entryMode).then((ok) => {
             if (ok) setIsRandomModalOpen(false);
           });
         }}
@@ -446,8 +459,8 @@ const DashboardPage = () => {
         isOpen={isUncadastredModalOpen}
         onOpenChange={setIsUncadastredModalOpen}
         isBusy={dashboard.isBusy}
-        onStart={(groupId) => {
-          dashboard.uncadastredStart(groupId).then((ok) => {
+        onStart={(groupId, entryMode) => {
+          dashboard.uncadastredStart(groupId, entryMode).then((ok) => {
             if (ok) setIsUncadastredModalOpen(false);
           });
         }}

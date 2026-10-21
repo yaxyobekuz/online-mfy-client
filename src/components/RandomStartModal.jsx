@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Modal, useOverlayState } from "@heroui/react";
 import { Shuffle } from "lucide-react";
+import EntryModeSelector from "./EntryModeSelector.jsx";
 
 const RandomStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
   const state = useOverlayState({ isOpen, onOpenChange });
   const [target, setTarget] = useState("");
+  // Boshida "odatiy"; keyin oxirgi ishlatilgani belgilangan qoladi.
+  const [mode, setMode] = useState("odatiy");
 
   const parsed = Number(target);
   const isValid = Number.isFinite(parsed) && parsed >= 1 && parsed <= 50000;
@@ -12,7 +15,7 @@ const RandomStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!isValid || isBusy) return;
-    onStart(parsed);
+    onStart(parsed, mode);
   };
 
   return (
@@ -51,6 +54,10 @@ const RandomStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
                     1 dan 50 000 gacha son kiriting
                   </p>
                 )}
+
+                <div className="mt-4">
+                  <EntryModeSelector value={mode} onChange={setMode} />
+                </div>
               </form>
             </Modal.Body>
 

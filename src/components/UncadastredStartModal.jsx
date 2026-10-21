@@ -3,6 +3,7 @@ import { Modal, Spinner, useOverlayState } from "@heroui/react";
 import { FileWarning, Play } from "lucide-react";
 import { toast } from "sonner";
 import api from "../config/api.js";
+import EntryModeSelector from "./EntryModeSelector.jsx";
 
 /**
  * "Kadastrsiz boshlash" — qaysi MFY guruhidan ishlashni tanlash.
@@ -20,6 +21,8 @@ const UncadastredStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
   // usul: effect ichida sinxron setState bo'lmasligi uchun).
   const [groups, setGroups] = useState(null);
   const [selected, setSelected] = useState(null);
+  // Boshida "odatiy"; keyin oxirgi ishlatilgani belgilangan qoladi.
+  const [mode, setMode] = useState("odatiy");
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -57,7 +60,7 @@ const UncadastredStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!selected || isBusy) return;
-    onStart(selected);
+    onStart(selected, mode);
   };
 
   return (
@@ -124,6 +127,10 @@ const UncadastredStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
                           </span>
                         </button>
                       ))}
+                    </div>
+
+                    <div className="mt-4">
+                      <EntryModeSelector value={mode} onChange={setMode} />
                     </div>
                   </>
                 )}

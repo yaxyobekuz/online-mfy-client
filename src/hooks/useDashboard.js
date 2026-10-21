@@ -150,7 +150,7 @@ export const useDashboard = (accountUid = null) => {
     };
   }, [accountUid]);
 
-  const control = useCallback((action) => {
+  const control = useCallback((action, entryMode) => {
     setIsBusy(true);
 
     // Tugmani darhol almashtiramiz (optimistik). "start" -> ishlamoqda,
@@ -166,7 +166,12 @@ export const useDashboard = (accountUid = null) => {
     );
 
     return api
-      .post("/api/dashboard/control", { action })
+      .post("/api/dashboard/control", {
+        action,
+        // Uslub faqat "start" da ma'noli — pause/stop ga ta'sir
+        // qilmaydi. Berilmasa server "odatiy" deb oladi.
+        ...(entryMode ? { entryMode } : {}),
+      })
       .then((data) => {
         toast.success(data.message ?? "Bajarildi");
         return true;
@@ -181,11 +186,14 @@ export const useDashboard = (accountUid = null) => {
   }, []);
 
   const randomStart = useCallback(
-    (target) => {
+    (target, entryMode) => {
       setIsBusy(true);
 
       return api
-        .post("/api/dashboard/random-start", { target })
+        .post("/api/dashboard/random-start", {
+          target,
+          ...(entryMode ? { entryMode } : {}),
+        })
         .then((data) => {
           toast.success(data.message ?? "Random rejim boshlandi");
           return true;
@@ -222,12 +230,15 @@ export const useDashboard = (accountUid = null) => {
   // "Kadastrsiz boshlash" — KADASTRSIZ bazadagi (tanlangan MFY
   // guruhi) fuqarolarni familiya bo'yicha moslab kiritadi, mos
   // kelmaganini random xonadonga taqsimlaydi.
-  const uncadastredStart = useCallback((groupId) => {
+  const uncadastredStart = useCallback((groupId, entryMode) => {
     setIsBusy(true);
     setOptimisticRunning(true);
 
     return api
-      .post("/api/dashboard/uncadastred-start", { groupId })
+      .post("/api/dashboard/uncadastred-start", {
+        groupId,
+        ...(entryMode ? { entryMode } : {}),
+      })
       .then((data) => {
         toast.success(data.message ?? "Kadastrsiz rejim boshlandi");
         return true;
@@ -354,7 +365,7 @@ export const useDashboard = (accountUid = null) => {
     // Optimistik holat bo'lsa — o'sha ko'rsatiladi (tugma darhol
     // almashsin).
     isRunning: effectiveRunning,
-    start: () => control("start"),
+    start: (entryMode) => control("start", entryMode),
     pause: () => control("pause"),
     stop: () => control("stop"),
     randomStart,
