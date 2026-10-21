@@ -560,6 +560,13 @@ const StatusNote = ({ dashboard }) => {
         {run.isActive ? "" : " · to’xtatilgan"} · {done}/
         {run.membersTotal ?? 0} · {run.matchedBySurname ?? 0} familiya,{" "}
         {run.matchedRandomly ?? 0} random
+        {/* To'xtagan bo'lsa — SABABINI ko'rsatamiz (server `stage` ga
+            yozadi: "Token eskirgan", "Chegaraga yetildi", "Xonadonlar
+            to'ldi", "To'xtatildi"...). Avval faqat "to'xtatilgan"
+            ko'rinardi va xodim nega to'xtaganini bilolmasdi. */}
+        {!run.isActive && run.stage ? (
+          <span className="text-warn"> · {run.stage}</span>
+        ) : null}
       </span>
     );
   }
