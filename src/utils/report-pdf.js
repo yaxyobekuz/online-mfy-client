@@ -255,15 +255,12 @@ const drawStreetBreakdown = (doc, report) => {
 
   const row = (street) => [
     street.streetName,
-    { content: formatCount(street.homes), styles: { halign: "right" } },
     {
       content: formatCount(street.added),
       styles: { textColor: COLORS.ok, fontStyle: "bold" },
     },
     `${percentOf(street.added, totalAdded)}%`,
   ];
-
-  const totalHomes = streets.reduce((sum, s) => sum + (s.homes ?? 0), 0);
 
   autoTable(doc, {
     startY: 146,
@@ -273,7 +270,6 @@ const drawStreetBreakdown = (doc, report) => {
     head: [
       [
         "Ko'cha",
-        { content: "Xonadon", styles: { halign: "right" } },
         { content: "Ro'yxatga olingan", styles: { halign: "right" } },
         { content: "Ulushi", styles: { halign: "right" } },
       ],
@@ -282,7 +278,6 @@ const drawStreetBreakdown = (doc, report) => {
     foot: [
       [
         "Jami",
-        { content: formatCount(totalHomes), styles: { halign: "right" } },
         { content: formatCount(totalAdded), styles: { halign: "right" } },
         { content: `${totalAdded > 0 ? 100 : 0}%`, styles: { halign: "right" } },
       ],
@@ -300,9 +295,8 @@ const drawStreetBreakdown = (doc, report) => {
     alternateRowStyles: { fillColor: [250, 250, 250] },
     columnStyles: {
       0: { cellWidth: "auto" },
-      1: { halign: "right", cellWidth: 26 },
-      2: { halign: "right", cellWidth: 36 },
-      3: { halign: "right", cellWidth: 24 },
+      1: { halign: "right", cellWidth: 40 },
+      2: { halign: "right", cellWidth: 28 },
     },
   });
 };
