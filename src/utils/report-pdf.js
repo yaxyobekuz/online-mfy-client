@@ -241,7 +241,11 @@ const drawHomes = (doc, report) => {
 
 const drawStreetBreakdown = (doc, report) => {
   const streets = report.byStreet ?? [];
-  const totalAdded = report.people.added;
+  // "Jami" va ulushlar AYNAN ko'rsatilgan qatorlar yig'indisiga
+  // tayanadi — shunda ustun o'z jamiga teng bo'ladi va foizlar 100%
+  // ga yig'iladi. Bu yig'indi "Ro'yxatga olingan aholi" kartochkasi
+  // bilan bir manbadan kelgani uchun u bilan ham mos keladi.
+  const totalAdded = streets.reduce((sum, s) => sum + (s.added ?? 0), 0);
 
   drawSection(doc, "Ko'chalar kesimida ro'yxatga olingan aholi", 142);
 
