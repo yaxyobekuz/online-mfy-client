@@ -239,40 +239,52 @@ const drawHomes = (doc, report) => {
   }
 };
 
-const drawBreakdown = (doc, report) => {
-  const { people } = report;
-  const total = people.total;
+const drawStreetBreakdown = (doc, report) => {
+  const streets = report.byStreet ?? [];
+  const totalAdded = report.people.added;
 
-  drawSection(doc, "Batafsil", 142);
+  drawSection(doc, "Ko'chalar kesimida ro'yxatga olingan aholi", 142);
 
-  const row = (label, value, color) => [
-    label,
-    { content: formatCount(value), styles: { textColor: color, fontStyle: "bold" } },
-    `${percentOf(value, total)}%`,
+  // Yurish hali boshlanmagan yoki ko'cha ma'lumoti yo'q bo'lsa —
+  // bo'sh jadval o'rniga qisqa izoh.
+  if (!streets.length) {
+    setText(doc, { size: 9.5, color: COLORS.muted });
+    doc.text("Ko'chalar bo'yicha ma'lumot hali mavjud emas.", MARGIN, 150);
+    return;
+  }
+
+  const row = (street) => [
+    street.streetName,
+    { content: formatCount(street.homes), styles: { halign: "right" } },
+    {
+      content: formatCount(street.added),
+      styles: { textColor: COLORS.ok, fontStyle: "bold" },
+    },
+    `${percentOf(street.added, totalAdded)}%`,
   ];
+
+  const totalHomes = streets.reduce((sum, s) => sum + (s.homes ?? 0), 0);
 
   autoTable(doc, {
     startY: 146,
-    margin: { left: MARGIN, right: MARGIN },
+    // Pastki chegara — footer chizig'i (y=284) ustiga qatorlar
+    // tushmasligi uchun bo'sh joy qoldiramiz.
+    margin: { left: MARGIN, right: MARGIN, bottom: 18 },
     head: [
       [
-        "Holat",
-        { content: "Soni", styles: { halign: "right" } },
+        "Ko'cha",
+        { content: "Xonadon", styles: { halign: "right" } },
+        { content: "Ro'yxatga olingan", styles: { halign: "right" } },
         { content: "Ulushi", styles: { halign: "right" } },
       ],
     ],
-    body: [
-      row("Ro'yxatga olingan", people.added, COLORS.ok),
-      row("Platformada avvaldan mavjud", people.exists, COLORS.warn),
-      row("Boshqa MFY da ro'yxatda", people.movedAway, COLORS.warn),
-      row("Ro'yxatga olib bo'lmagan (xato)", people.failed, COLORS.bad),
-      row("Ro'yxatga olinish kutilmoqda", people.pending, COLORS.muted),
-    ],
+    body: streets.map(row),
     foot: [
       [
-        "Jami aholi",
-        { content: formatCount(total), styles: { halign: "right" } },
-        { content: `${total > 0 ? 100 : 0}%`, styles: { halign: "right" } },
+        "Jami",
+        { content: formatCount(totalHomes), styles: { halign: "right" } },
+        { content: formatCount(totalAdded), styles: { halign: "right" } },
+        { content: `${totalAdded > 0 ? 100 : 0}%`, styles: { halign: "right" } },
       ],
     ],
     styles: {
@@ -287,9 +299,10 @@ const drawBreakdown = (doc, report) => {
     footStyles: { fillColor: COLORS.panel, textColor: COLORS.ink, fontStyle: "bold" },
     alternateRowStyles: { fillColor: [250, 250, 250] },
     columnStyles: {
-      0: { cellWidth: 110 },
-      1: { halign: "right", cellWidth: 36 },
+      0: { cellWidth: "auto" },
+      1: { halign: "right", cellWidth: 26 },
       2: { halign: "right", cellWidth: 36 },
+      3: { halign: "right", cellWidth: 24 },
     },
   });
 };
@@ -316,7 +329,7 @@ export const renderDashboardReport = (doc, report) => {
   drawHeader(doc, report);
   drawSummary(doc, report);
   drawHomes(doc, report);
-  drawBreakdown(doc, report);
+  drawStreetBreakdown(doc, report);
   drawFooter(doc);
   return doc;
 };
