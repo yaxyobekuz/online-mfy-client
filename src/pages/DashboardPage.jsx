@@ -437,8 +437,8 @@ const DashboardPage = () => {
         isOpen={isStartModalOpen}
         onOpenChange={setIsStartModalOpen}
         isBusy={dashboard.isBusy}
-        onStart={(entryMode) => {
-          dashboard.start(entryMode).then((ok) => {
+        onStart={(entryMode, enrich) => {
+          dashboard.start(entryMode, enrich).then((ok) => {
             if (ok) setIsStartModalOpen(false);
           });
         }}
@@ -448,8 +448,8 @@ const DashboardPage = () => {
         isOpen={isRandomModalOpen}
         onOpenChange={setIsRandomModalOpen}
         isBusy={dashboard.isBusy}
-        onStart={(target, entryMode) => {
-          dashboard.randomStart(target, entryMode).then((ok) => {
+        onStart={(target, entryMode, enrich) => {
+          dashboard.randomStart(target, entryMode, enrich).then((ok) => {
             if (ok) setIsRandomModalOpen(false);
           });
         }}
@@ -459,8 +459,8 @@ const DashboardPage = () => {
         isOpen={isUncadastredModalOpen}
         onOpenChange={setIsUncadastredModalOpen}
         isBusy={dashboard.isBusy}
-        onStart={(groupId, entryMode) => {
-          dashboard.uncadastredStart(groupId, entryMode).then((ok) => {
+        onStart={(groupId, entryMode, enrich) => {
+          dashboard.uncadastredStart(groupId, entryMode, enrich).then((ok) => {
             if (ok) setIsUncadastredModalOpen(false);
           });
         }}

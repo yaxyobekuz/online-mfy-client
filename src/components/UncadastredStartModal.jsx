@@ -23,6 +23,8 @@ const UncadastredStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
   const [selected, setSelected] = useState(null);
   // Boshida "odatiy"; keyin oxirgi ishlatilgani belgilangan qoladi.
   const [mode, setMode] = useState("odatiy");
+  // "JSHSHIR orqali ma'lumotni yaxshilash" belgisi.
+  const [enrich, setEnrich] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -60,7 +62,7 @@ const UncadastredStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!selected || isBusy) return;
-    onStart(selected, mode);
+    onStart(selected, mode, enrich);
   };
 
   return (
@@ -130,7 +132,12 @@ const UncadastredStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
                     </div>
 
                     <div className="mt-4">
-                      <EntryModeSelector value={mode} onChange={setMode} />
+                      <EntryModeSelector
+                        value={mode}
+                        onChange={setMode}
+                        enrich={enrich}
+                        onEnrichChange={setEnrich}
+                      />
                     </div>
                   </>
                 )}

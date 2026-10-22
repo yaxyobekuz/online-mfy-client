@@ -17,11 +17,13 @@ const StartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
   // Boshida "odatiy"; keyin oxirgi ishlatilgan uslub belgilangan
   // qoladi (hisobga saqlanmaydi — faqat shu seansda).
   const [mode, setMode] = useState("odatiy");
+  // "JSHSHIR orqali ma'lumotni yaxshilash" belgisi.
+  const [enrich, setEnrich] = useState(false);
 
   const handleSubmit = (event) => {
     event.preventDefault();
     if (isBusy) return;
-    onStart(mode);
+    onStart(mode, enrich);
   };
 
   return (
@@ -41,7 +43,12 @@ const StartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
                   kiritilishini tanlang.
                 </p>
 
-                <EntryModeSelector value={mode} onChange={setMode} />
+                <EntryModeSelector
+                  value={mode}
+                  onChange={setMode}
+                  enrich={enrich}
+                  onEnrichChange={setEnrich}
+                />
               </form>
             </Modal.Body>
 

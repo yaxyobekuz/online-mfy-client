@@ -8,6 +8,8 @@ const RandomStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
   const [target, setTarget] = useState("");
   // Boshida "odatiy"; keyin oxirgi ishlatilgani belgilangan qoladi.
   const [mode, setMode] = useState("odatiy");
+  // "JSHSHIR orqali ma'lumotni yaxshilash" belgisi.
+  const [enrich, setEnrich] = useState(false);
 
   const parsed = Number(target);
   const isValid = Number.isFinite(parsed) && parsed >= 1 && parsed <= 50000;
@@ -15,7 +17,7 @@ const RandomStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!isValid || isBusy) return;
-    onStart(parsed, mode);
+    onStart(parsed, mode, enrich);
   };
 
   return (
@@ -56,7 +58,12 @@ const RandomStartModal = ({ isOpen, onOpenChange, onStart, isBusy }) => {
                 )}
 
                 <div className="mt-4">
-                  <EntryModeSelector value={mode} onChange={setMode} />
+                  <EntryModeSelector
+                    value={mode}
+                    onChange={setMode}
+                    enrich={enrich}
+                    onEnrichChange={setEnrich}
+                  />
                 </div>
               </form>
             </Modal.Body>

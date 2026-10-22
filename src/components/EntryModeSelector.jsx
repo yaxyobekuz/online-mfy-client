@@ -11,6 +11,12 @@ import { Gauge, ScanSearch, Sparkles } from "lucide-react";
  *
  * `value` — joriy tanlov ("odatiy" | "batafsil" | "aqilli"),
  * `onChange(mode)` — tanlov o'zgarganda.
+ *
+ * Qo'shimcha (ixtiyoriy): "JSHSHIR orqali ma'lumotni yaxshilash" belgisi.
+ * `onEnrichChange` berilsa, uslub tanlovidan pastda (ya'ni "Boshlash"
+ * tugmasi ustida) checkbox ko'rsatiladi.
+ *   `enrich` — joriy holat (bool),
+ *   `onEnrichChange(checked)` — belgilanganda.
  */
 
 const MODES = [
@@ -34,7 +40,12 @@ const MODES = [
   },
 ];
 
-const EntryModeSelector = ({ value = "odatiy", onChange }) => (
+const EntryModeSelector = ({
+  value = "odatiy",
+  onChange,
+  enrich = false,
+  onEnrichChange,
+}) => (
   <div>
     <p className="mb-2 text-xs font-medium text-muted">Kiritish uslubi</p>
 
@@ -75,6 +86,27 @@ const EntryModeSelector = ({ value = "odatiy", onChange }) => (
         );
       })}
     </div>
+
+    {onEnrichChange ? (
+      <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl bg-canvas px-4 py-3 transition-colors hover:bg-black/5">
+        <input
+          type="checkbox"
+          checked={enrich}
+          onChange={(event) => onEnrichChange(event.target.checked)}
+          className="mt-0.5 size-4 shrink-0 accent-brand"
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium text-ink">
+            JSHSHIR orqali ma&rsquo;lumotni yaxshilash
+          </span>
+          <span className="mt-0.5 block text-xs text-muted">
+            Tug&rsquo;ilgan sanasi yo&rsquo;q, lekin JSHSHIR&rsquo;i bor
+            fuqaroning sanasi JSHSHIR&rsquo;dan tiklanadi. Aks holda bunday
+            odam &ldquo;sana yo&rsquo;q&rdquo; deb o&rsquo;tkazib yuboriladi.
+          </span>
+        </span>
+      </label>
+    ) : null}
   </div>
 );
 

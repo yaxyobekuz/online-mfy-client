@@ -150,7 +150,7 @@ export const useDashboard = (accountUid = null) => {
     };
   }, [accountUid]);
 
-  const control = useCallback((action, entryMode) => {
+  const control = useCallback((action, entryMode, enrich) => {
     setIsBusy(true);
 
     // Tugmani darhol almashtiramiz (optimistik). "start" -> ishlamoqda,
@@ -171,6 +171,8 @@ export const useDashboard = (accountUid = null) => {
         // Uslub faqat "start" da ma'noli — pause/stop ga ta'sir
         // qilmaydi. Berilmasa server "odatiy" deb oladi.
         ...(entryMode ? { entryMode } : {}),
+        // "JSHSHIR orqali yaxshilash" belgisi (faqat "start" da ma'noli).
+        ...(enrich !== undefined ? { enrichFromPinfl: enrich } : {}),
       })
       .then((data) => {
         toast.success(data.message ?? "Bajarildi");
@@ -186,13 +188,14 @@ export const useDashboard = (accountUid = null) => {
   }, []);
 
   const randomStart = useCallback(
-    (target, entryMode) => {
+    (target, entryMode, enrich) => {
       setIsBusy(true);
 
       return api
         .post("/api/dashboard/random-start", {
           target,
           ...(entryMode ? { entryMode } : {}),
+          ...(enrich !== undefined ? { enrichFromPinfl: enrich } : {}),
         })
         .then((data) => {
           toast.success(data.message ?? "Random rejim boshlandi");
@@ -230,7 +233,7 @@ export const useDashboard = (accountUid = null) => {
   // "Kadastrsiz boshlash" — KADASTRSIZ bazadagi (tanlangan MFY
   // guruhi) fuqarolarni familiya bo'yicha moslab kiritadi, mos
   // kelmaganini random xonadonga taqsimlaydi.
-  const uncadastredStart = useCallback((groupId, entryMode) => {
+  const uncadastredStart = useCallback((groupId, entryMode, enrich) => {
     setIsBusy(true);
     setOptimisticRunning(true);
 
@@ -238,6 +241,7 @@ export const useDashboard = (accountUid = null) => {
       .post("/api/dashboard/uncadastred-start", {
         groupId,
         ...(entryMode ? { entryMode } : {}),
+        ...(enrich !== undefined ? { enrichFromPinfl: enrich } : {}),
       })
       .then((data) => {
         toast.success(data.message ?? "Kadastrsiz rejim boshlandi");
@@ -365,7 +369,7 @@ export const useDashboard = (accountUid = null) => {
     // Optimistik holat bo'lsa — o'sha ko'rsatiladi (tugma darhol
     // almashsin).
     isRunning: effectiveRunning,
-    start: (entryMode) => control("start", entryMode),
+    start: (entryMode, enrich) => control("start", entryMode, enrich),
     pause: () => control("pause"),
     stop: () => control("stop"),
     randomStart,
