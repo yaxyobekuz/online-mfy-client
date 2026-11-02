@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Spinner, Table } from "@heroui/react";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Download, Search } from "lucide-react";
 import { toast } from "sonner";
-import api from "../config/api";
+import api, { apiBaseUrl } from "../config/api";
+import { getActiveMahallaUid, getSession } from "../config/accounts.js";
 import MemberDetailsModal from "../components/MemberDetailsModal.jsx";
 import RecordDetailsModal from "../components/RecordDetailsModal.jsx";
 import {
@@ -60,6 +61,7 @@ const ReportListPage = () => {
 
   const [searchInput, setSearchInput] = useState(search);
   const [selected, setSelected] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Natija qaysi so'rovga tegishli ekani kalit bilan saqlanadi —
   // DatabasePage bilan bir xil usul (effectda setState kerak emas).
@@ -111,6 +113,54 @@ const ReportListPage = () => {
     if (!open) setSelected(null);
   };
 
+  /*
+    Excel yuklab olish — SAHIFALANMAGAN to'liq ro'yxat (50 ta emas,
+    hammasi). Qidiruv yoqilgan bo'lsa, faylga ham faqat topilganlar
+    tushadi: ekranda ko'rinib turgani bilan mos bo'lsin.
+
+    Javob — fayl (blob), JSON emas; `api` interceptor'i esa JSON
+    kutadi, shuning uchun bu yerda to'g'ridan-to'g'ri `fetch`
+    ishlatiladi (HomeMembersPage'dagi kabi).
+  */
+  const exportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const params = new URLSearchParams({ kind });
+      if (search) params.set("search", search);
+
+      const response = await fetch(
+        `${apiBaseUrl}/api/dashboard/list/export?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${getSession()}`,
+            "X-Mahalla-Uid": getActiveMahallaUid() ?? "",
+          },
+        },
+      );
+      if (!response.ok) throw new Error("export failed");
+
+      // Fayl nomini server beradi (ro'yxat turi + mahalla + sana).
+      const disposition = response.headers.get("Content-Disposition") ?? "";
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      const fileName =
+        match?.[1] ?? `${kind}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Excel yuklab olishda xatolik yuz berdi");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="flex h-svh min-w-0 flex-1 flex-col py-2 pr-2 pl-2">
       <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-3xl bg-panel px-6 py-2">
@@ -140,20 +190,37 @@ const ReportListPage = () => {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 rounded-full bg-canvas px-4 py-3">
-            <Search className="size-5 shrink-0 text-muted" aria-hidden="true" />
-            <input
-              type="search"
-              value={searchInput}
-              placeholder="F.I.Sh., JSHSHIR, kadastr yoki manzil"
-              aria-label="Qidirish"
-              onChange={(event) => setSearchInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") applySearch(searchInput);
-              }}
-              className="w-72 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
-            />
-          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 rounded-full bg-canvas px-4 py-3">
+              <Search className="size-5 shrink-0 text-muted" aria-hidden="true" />
+              <input
+                type="search"
+                value={searchInput}
+                placeholder="F.I.Sh., JSHSHIR, kadastr yoki manzil"
+                aria-label="Qidirish"
+                onChange={(event) => setSearchInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") applySearch(searchInput);
+                }}
+                className="w-72 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+              />
+            </label>
+
+            {/*
+              Ro'yxatni Excel qilib yuklab olish. Bo'sh ro'yxatda
+              tugma o'chiq turadi — foydalanuvchi bo'sh fayl olmasin.
+            */}
+            <button
+              type="button"
+              onClick={exportExcel}
+              disabled={isExporting || isLoading || items.length === 0}
+              title="Ro'yxatni Excel (.xlsx) formatda yuklab olish"
+              className="flex items-center gap-2 rounded-full bg-ok-soft px-4 py-3 text-sm font-medium text-ok whitespace-nowrap transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              <Download className="size-5" aria-hidden="true" />
+              {isExporting ? "Tayyorlanmoqda..." : "Excel yuklab olish"}
+            </button>
+          </div>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl bg-canvas p-3">
